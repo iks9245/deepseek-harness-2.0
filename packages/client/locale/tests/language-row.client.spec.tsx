@@ -11,7 +11,7 @@ import { createLanguageRowStore } from '../src/client/settings-store.ts'
 
 afterEach(cleanup)
 
-const OPTIONS = [{ id: 'zh', label: '中文' }, { id: 'en', label: 'English' }]
+const OPTIONS = [{ id: 'zh', label: '中文' }, { id: 'zh-TW', label: '繁體中文' }, { id: 'en', label: 'English' }]
 
 function emptySessions() {
   const store = createSnapshotStore<SessionListState>(
@@ -62,6 +62,9 @@ describe('LanguageRow', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(screen.getByRole('menuitem', { name: '中文' }))
     expect(b.setLocale).toHaveBeenCalledWith('zh')
+    fireEvent.click(trigger)
+    fireEvent.click(screen.getByRole('menuitem', { name: '繁體中文' }))
+    expect(b.setLocale).toHaveBeenCalledWith('zh-TW')
     expect(trigger.getAttribute('aria-expanded')).toBe('false')
     expect(screen.queryByRole('menuitem', { name: '中文' })).toBeNull()
   })

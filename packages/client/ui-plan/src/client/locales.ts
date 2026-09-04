@@ -10,6 +10,16 @@ export const zh = {
   'chip.exitFailed': '退出 plan mode 失败',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'chip.label': 'Plan',
+  'chip.on.aria': 'plan mode 已開啟，按下關閉',
+  'chip.on.title': 'plan mode 已開啟 — 點選關閉（/plan off）',
+  'chip.off.aria': 'plan mode 已關閉，按下開啟',
+  'chip.off.title': 'plan mode 已關閉 — 點選開啟（/plan）',
+  'chip.exitFailed': '退出 plan mode 失敗',
+} satisfies Record<string, string>
+
 /** The plan namespace key union. */
 export type PlanKey = keyof typeof zh
 

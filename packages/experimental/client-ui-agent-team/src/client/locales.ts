@@ -42,6 +42,45 @@ export const zh = {
   'status.completed': '已完成',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  trigger: 'Agent Team',
+  refresh: '重新整理 Team',
+  close: '關閉',
+  loading: '正在載入 Team…',
+  empty: '還沒有共享任務',
+  roster: '成員',
+  tasks: '共享任務',
+  model: '模型',
+  open: '開啟 teammate 會話',
+  create: '新建任務',
+  subject: '任務標題',
+  description: '任務描述',
+  blockers: '依賴任務 id（逗號分隔）',
+  scopes: '寫入範圍（逗號分隔）',
+  save: '儲存',
+  cancel: '取消',
+  edit: '編輯',
+  complete: '完成',
+  reopen: '重開',
+  delete: '刪除',
+  owner: 'Owner',
+  unowned: '未分配',
+  blockedBy: '依賴',
+  writeScopes: '寫入範圍',
+  ready: '可開始',
+  blocked: '被依賴阻塞',
+  conflict: '任務狀態已變化，已重新載入；請檢查後重試。',
+  'memberStatus.running': '執行中',
+  'memberStatus.idle': '空閒',
+  'memberStatus.inactive': '未執行',
+  'memberStatus.provisioning': '準備中',
+  'memberStatus.failed': '失敗',
+  'status.pending': '待處理',
+  'status.in_progress': '進行中',
+  'status.completed': '已完成',
+} satisfies Record<string, string>
+
 /** Agent Teams locale key union. */
 export type TeamKey = keyof typeof zh
 

@@ -16,6 +16,22 @@ export const zh = {
   'confirm.enable': '启用完全权限',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'title': '權限',
+  'description': '選擇新會話的預設權限模式',
+  'loading': '載入中',
+  'unavailable': '不可用',
+  'preset.readOnly': '僅可檢視',
+  'preset.workspaceWrite': '工作區內修改',
+  'preset.fullAccess': '完全權限',
+  'confirm.title': '確認啟用完全權限？',
+  'confirm.description': '啟用完全權限後，新會話將減少確認步驟，並且可以直接執行更多操作，包括敏感操作、檔案修改或外部命令。僅建議在你信任後續任務時使用。',
+  'confirm.acknowledge': '我已瞭解風險，並願意繼續',
+  'confirm.cancel': '取消',
+  'confirm.enable': '啟用完全權限',
+} satisfies Record<string, string>
+
 /** The settings.permission namespace key union. */
 export type PermissionSettingsKey = keyof typeof zh
 
@@ -46,6 +62,18 @@ export const accessZh = {
   'confirm.cancel': '取消',
   'confirm.enable': '启用完全权限',
 } satisfies Record<string, string>
+
+/** Traditional Chinese dictionary for the current-session popup gate. */
+export const accessZhTW = {
+  'preset.readOnly': '僅可檢視',
+  'preset.workspaceWrite': '工作區內修改',
+  'preset.fullAccess': '完全權限',
+  'confirm.title': '確認啟用完全權限？',
+  'confirm.description': '啟用完全權限後，智慧體將減少確認步驟，並且可以直接執行更多操作，包括敏感操作、檔案修改或外部命令。僅建議在你信任目前任務時使用。',
+  'confirm.acknowledge': '我已瞭解風險，並願意繼續',
+  'confirm.cancel': '取消',
+  'confirm.enable': '啟用完全權限',
+} satisfies Record<keyof typeof accessZh, string>
 
 /** Current-session popup-gate key union. */
 export type PermissionAccessKey = keyof typeof accessZh

@@ -8,6 +8,14 @@ export const zh = {
   'toggle.collapse': '收起侧边栏',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'session.new': '新會話',
+  'session.new.label': '新建會話',
+  'toggle.open': '開啟側邊欄',
+  'toggle.collapse': '收起側邊欄',
+} satisfies Record<string, string>
+
 /** The sidebar namespace key union. */
 export type SidebarKey = keyof typeof zh
 

@@ -22,6 +22,25 @@ export const zh = {
   'duration.title.done': '耗时 {duration}',
 } as const
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'count.live.one': '{count} 個後臺任務執行中',
+  'count.live.other': '{count} 個後臺任務執行中',
+  'count.idle.one': '{count} 個後臺任務',
+  'count.idle.other': '{count} 個後臺任務',
+  'list.aria': '後臺任務',
+  'status.running': '執行中',
+  'status.stopping': '正在停止',
+  'status.completed': '已完成',
+  'status.killed': '已取消',
+  'status.failed': '已失敗',
+  'duration.seconds': '{seconds}秒',
+  'duration.minutes': '{minutes}分{seconds}秒',
+  'duration.hours': '{hours}小時{minutes}分',
+  'duration.title.live': '已執行 {duration}',
+  'duration.title.done': '耗時 {duration}',
+} as const
+
 /** English dictionary, key-identical to the Chinese source of truth. */
 export const en: Record<JobKey, string> = {
   'count.live.one': '{count} background job running',

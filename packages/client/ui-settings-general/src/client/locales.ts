@@ -16,6 +16,22 @@ export const zh = {
   'connection.restart': '连接中，点击立即重连',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'trigger': '設定',
+  'title': '設定',
+  'close': '關閉',
+  'openDocument': '開啟配置檔案',
+  'openDocument.error': '無法開啟配置檔案',
+  'general.nav': '通用設定',
+  'connection.error': '連線異常',
+  'connection.retry': '立即重連',
+  'connection.connecting': '連線中',
+  'connection.connected': '連線成功',
+  'connection.reconnect': '連線異常，點選立即重連',
+  'connection.restart': '連線中，點選立即重連',
+} satisfies Record<string, string>
+
 /** The settings namespace key union. */
 export type SettingsKey = keyof typeof zh
 
