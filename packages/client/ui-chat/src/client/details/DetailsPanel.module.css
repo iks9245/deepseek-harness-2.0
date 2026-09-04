@@ -23,6 +23,7 @@
 
 /* figma I54:42735;43:41479: 14/20 wt500. */
 .title {
+  margin: 0;
   overflow: hidden;
   font-size: 14px;
   line-height: 20px;

@@ -1,9 +1,11 @@
 import { Fragment } from 'react'
-import { CodeBlock } from '@deepseek-ai/dsh-client-ui-primitives'
+import { CodeBlock, IconCloseOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { shallowEqual } from '@deepseek-ai/dsh-client-store'
 import type { DetailsSlotProps } from '../contract/slots.ts'
 import type { ChatSnapshot, RunningToolCall, ToolCallBlock, ToolResultNode } from '../contract/snapshot.ts'
 import { findToolCall } from './tool-node-reader.ts'
+import { ExecutiveSummary } from '../knowledge/ExecutiveSummary.tsx'
+import { deriveKnowledgeDocument } from '../knowledge/model.ts'
 import css from './DetailsPanel.module.css'
 
 export type DetailsPanelProps = DetailsSlotProps
@@ -45,8 +47,16 @@ function rawResultText(block: ToolCallBlock): string {
   return parts.join('\n')
 }
 
-export function DetailsPanel({ useChat, useSessions, sessionId, useStore, renderSlot, closeDetails, t }: DetailsPanelProps) {
+export function DetailsPanel({
+  useChat, useSessions, useProjection, sessionId, useStore, actions, renderSlot, closeDetails, t,
+}: DetailsPanelProps) {
   const selection = useStore(s => s.selection)
+  const selectedKnowledgeId = useStore(s => s.selectedKnowledgeId)
+  const bookmarks = useStore(s => s.knowledgeBookmarks)
+  const nodeValues = useChat(s => s.nodes.values())
+  const outline = useProjection('turnOutline')
+  const document = deriveKnowledgeDocument(outline, nodeValues)
+  const selectedKnowledge = document.cards.find(card => card.id === selectedKnowledgeId)
   // Session workspace root: a card model resolves omitted or relative
   // tool paths against it without reading Session services.
   const sessionCwd = useSessions(list => list.byId[sessionId]?.cwd)
@@ -59,21 +69,29 @@ export function DetailsPanel({ useChat, useSessions, sessionId, useStore, render
   return (
     <div className={css.root}>
       <div className={css.header}>
-        <div className={css.title}>
-          {selection === null ? t('details.title') : material?.name ?? selection.toolName ?? t('details.title')}
-        </div>
+        <h2 className={css.title}>
+          {selection === null ? t('knowledge.summary.title') : material?.name ?? selection.toolName ?? t('details.title')}
+        </h2>
         <button
           type="button" className={css.close} aria-label={t('details.close')}
           onClick={() => { closeDetails() }}
         >
-          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
-            <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <IconCloseOutline16 size={14} />
         </button>
       </div>
       <div className={css.body}>
         {selection === null || callId === undefined
-          ? <div className={css.empty}>{t('details.empty')}</div>
+          ? (
+            <ExecutiveSummary
+              document={document}
+              selected={selectedKnowledge}
+              bookmarks={bookmarks}
+              onToggleBookmark={() => {
+                if (selectedKnowledgeId !== null) actions.toggleKnowledgeBookmark(selectedKnowledgeId)
+              }}
+              t={t}
+            />
+          )
           : material === null
             ? <div className={css.empty}>{t('details.notInWindow')}</div>
             : (

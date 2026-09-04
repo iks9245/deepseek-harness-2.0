@@ -19,16 +19,43 @@ export const ZH_BROWSER_LOCALE = 'zh-CN'
 
 /**
  * Open the standard browser-test page advertising English before client boot.
+ * Existing transcript scenarios rehydrate that view explicitly so the new
+ * product-default Knowledge Map does not silently change their subject. A
+ * Knowledge Workspace scenario opts into `product-default` instead.
  * This keeps role locators and goldens deterministic while leaving the Host
  * settings document free to override the provisional browser-derived locale;
  * scenarios asserting the Chinese surface advertise
  * {@link ZH_BROWSER_LOCALE} instead.
  * @param browser - Playwright browser owning the page.
  * @param height - Viewport height; width is fixed to the lane baseline.
+ * @param conversationView - Transcript fixture or the unchanged product default.
  * @returns the initialized page.
  */
-export async function newEnglishPage(browser: Browser, height = 1000): Promise<Page> {
-  return await browser.newPage({ viewport: { width: 1680, height }, locale: 'en-US' })
+export async function newEnglishPage(
+  browser: Browser,
+  height = 1000,
+  conversationView: 'transcript' | 'product-default' = 'transcript',
+): Promise<Page> {
+  const page = await browser.newPage({ viewport: { width: 1680, height }, locale: 'en-US' })
+  if (conversationView === 'transcript') {
+    await page.addInitScript(() => {
+      // oxlint-disable-next-line typescript/unbound-method -- saved before replacing the prototype method.
+      const originalGetItem = Storage.prototype.getItem
+      Storage.prototype.getItem = function getItem(key: string): string | null {
+        const current = originalGetItem.call(this, key)
+        if (current !== null || !key.startsWith('dsh.chat.v1.')) return current
+        return JSON.stringify({
+          selection: null,
+          turnProcesses: [],
+          knowledgeMode: 'transcript',
+          selectedKnowledgeId: null,
+          knowledgeBookmarks: [],
+          expandedKnowledgeCards: [],
+        })
+      }
+    })
+  }
+  return page
 }
 
 /**

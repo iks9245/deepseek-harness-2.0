@@ -8,17 +8,27 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The browser Chat target for Conversation assembly. It registers Chat event definitions and snapshot construction, supplies `useChat`, renders transcript nodes and details, and owns Chat-specific stores, actions, localization, and scroll restoration; historical image URLs resolve through the Conversation-owned per-session cache (`ctx.uiConversation.imageUrl`). Its Assistant and Turn Tail definitions fold packed historical Assistant runs without expanding their members. Steering classification retains only next-step Inbox IDs through persistent splice state; next-turn splices create no Chat Context. Local submission echoes (`SessionSnapshot.pendingSubmissions`) retain the surface selected when the submit begins: transcript echoes render at the flow tail, steering echoes render with the pending-steering marker, and queued echoes stay out of Chat. Each echo is hidden per render once a user/steering node or queue occurrence carries its prompt `rpcId`, so the handoff is atomic.
+The browser Chat target for Conversation assembly. It registers Chat event definitions and snapshot construction, supplies `useChat`, presents the map-first Knowledge Workspace, renders transcript nodes and details, and owns Chat-specific stores, actions, localization, and scroll restoration; historical image URLs resolve through the Conversation-owned per-session cache (`ctx.uiConversation.imageUrl`). Its Assistant and Turn Tail definitions fold packed historical Assistant runs without expanding their members. Steering classification retains only next-step Inbox IDs through persistent splice state; next-turn splices create no Chat Context. Local submission echoes (`SessionSnapshot.pendingSubmissions`) retain the surface selected when the submit begins: transcript echoes render at the flow tail, steering echoes render with the pending-steering marker, and queued echoes stay out of Chat. Each echo is hidden per render once a user/steering node or queue occurrence carries its prompt `rpcId`, so the handoff is atomic.
 
 ## Table of Contents
 
 - [System prompt row](#system-prompt-row)
+- [Knowledge Workspace](#knowledge-workspace)
 - [Turn token usage](#turn-token-usage)
 - [Turn Process Folding](#turn-process-folding)
 - [Scroll ownership](#scroll-ownership)
 - [Model Experience](#model-experience)
 - [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
 - [Dev Note](#dev-note)
+
+-----
+
+<a id="knowledge-workspace"></a>
+## Knowledge Workspace
+
+A non-blank Session opens on a Conversation Graph derived from the host `turnOutline` projection plus the complete Assistant and Tool nodes in the loaded window. Stable card identifiers connect topic, question, answer, and Tool evidence nodes across the graph, the card reader, and the right-column executive summary. The summary extracts concise findings and detects explicit decision, action, and risk lines without another model request. Selecting a graph node focuses the same card in the summary; Reading mode exposes summary-first cards whose detail disclosures and bookmarks live in the Session-scoped browser store. Transcript mode retains the original chronological evidence and its existing paging, tools, and message actions.
+
+The first delivery deliberately uses the existing host outline and loaded Chat model. Full-history card detail and a dedicated durable `KnowledgeDocument` projection remain tracked by the Knowledge Workspace architecture note; the UI does not invent detail for material outside the loaded window.
 
 -----
 

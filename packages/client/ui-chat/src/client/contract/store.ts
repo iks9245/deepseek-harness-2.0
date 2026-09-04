@@ -21,4 +21,12 @@ export interface TurnProcessViewEntry {
 export interface ChatStoreState {
   selection: SelectionTarget | null
   turnProcesses: TurnProcessViewEntry[]
+  /** Primary Knowledge Workspace surface for this Session. */
+  knowledgeMode: 'map' | 'reading' | 'transcript'
+  /** Selected knowledge card shown in the map and executive-summary panel. */
+  selectedKnowledgeId: string | null
+  /** Browser-local reading bookmarks, addressed by stable knowledge-card ids. */
+  knowledgeBookmarks: string[]
+  /** Browser-local disclosure state for Knowledge Cards. */
+  expandedKnowledgeCards: string[]
 }

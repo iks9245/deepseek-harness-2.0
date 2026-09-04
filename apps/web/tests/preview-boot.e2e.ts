@@ -272,7 +272,7 @@ it('boots the packed worker deployment to an interactive page', async () => {
  * @param browser - Browser to open the page in.
  */
 async function bootPreview(origin: string, browser: Browser): Promise<void> {
-  const page = await newEnglishPage(browser)
+  const page = await newEnglishPage(browser, 1000, 'product-default')
   const pageErrors: Error[] = []
   const consoleErrors: string[] = []
   page.on('pageerror', (error) => { pageErrors.push(error) })
@@ -395,6 +395,10 @@ async function bootPreview(origin: string, browser: Browser): Promise<void> {
     const showcase = sessions.getByRole('treeitem').filter({ hasText: SHOWCASE_TITLE })
     await expect.poll(() => showcase.count(), { timeout: 15_000 }).toBe(1)
     await showcase.click()
+    await page.getByRole('heading', { name: 'Knowledge map' }).waitFor({ timeout: 30_000 })
+    await page.getByRole('button', { name: /Preview tour complete/ }).first().click()
+    await page.getByRole('heading', { name: 'Executive summary' }).waitFor()
+    await page.getByRole('tab', { name: 'Transcript' }).click()
     await page.getByText(SHOWCASE_TAIL, { exact: true }).waitFor({ timeout: 30_000 })
 
     expect(await page.getByText(SHOWCASE_OLDEST, { exact: true }).count()).toBe(0)

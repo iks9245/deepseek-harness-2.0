@@ -94,6 +94,8 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
 
   // Opening a session reaches chat content through the fixture transport.
   fireEvent.click(waitingTitle)
+  await screen.findByRole('heading', { name: 'Knowledge map' })
+  fireEvent.click(screen.getByRole('tab', { name: 'Transcript' }))
   await waitFor(() => {
     expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
   }, { timeout: 10_000 })
