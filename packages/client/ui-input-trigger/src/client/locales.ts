@@ -17,6 +17,19 @@ export const zh = {
   'suggestions.aria': '触发候选建议',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'command': '指令',
+  'skill': '技能',
+  'subagent': '子智慧體',
+  'loading': '正在載入…',
+  'drill.aria': '進入目錄',
+  'drill.hint': '進入目錄',
+  'drill.key': 'Tab',
+  'crumbs.aria': '目錄導航',
+  'suggestions.aria': '觸發候選建議',
+} satisfies Record<string, string>
+
 /** The slash.menu namespace key union. */
 export type MenuKey = keyof typeof zh
 

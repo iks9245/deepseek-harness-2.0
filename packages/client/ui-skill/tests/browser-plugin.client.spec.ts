@@ -127,6 +127,15 @@ describe('apply', () => {
           'row.inspect': '查看',
           'menu.userOnly': '仅用户',
         },
+        'zh-TW': {
+          'row.title': 'Skill',
+          'row.running': '正在載入 skill',
+          'row.failed': 'skill 載入失敗',
+          'row.stopped': 'skill 載入已中止',
+          'row.instructions': '說明',
+          'row.inspect': '檢視',
+          'menu.userOnly': '僅使用者',
+        },
         en: {
           'row.title': 'Skill',
           'row.running': 'Loading skill',

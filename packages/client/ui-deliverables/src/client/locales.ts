@@ -12,6 +12,15 @@ export const zh = {
   'produced.showInFolder': '在文件夹中显示',
 }
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'produced.label': '產物',
+  'produced.moreOne': '+ 1 個檔案',
+  'produced.more': '+ {count} 個檔案',
+  'produced.open': '開啟 {name}',
+  'produced.showInFolder': '在資料夾中顯示',
+}
+
 /** English dictionary (same key set). */
 export const en: Record<DeliverablesKey, string> = {
   'produced.label': 'Produced',

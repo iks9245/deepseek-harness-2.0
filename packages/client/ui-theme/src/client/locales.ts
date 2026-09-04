@@ -13,6 +13,19 @@ export const zh = {
   'fontSize.decrease': '减小字号',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'appearance.title': '外觀',
+  'appearance.light': '淺色',
+  'appearance.dark': '深色',
+  'appearance.system': '跟隨系統',
+  'fontSize.title': '字號大小',
+  'fontSize.description': '僅影響會話內容的字號',
+  'fontSize.unit': 'px',
+  'fontSize.increase': '增大字號',
+  'fontSize.decrease': '減小字號',
+} satisfies Record<string, string>
+
 /** The settings.theme namespace key union. */
 export type ThemeKey = keyof typeof zh
 

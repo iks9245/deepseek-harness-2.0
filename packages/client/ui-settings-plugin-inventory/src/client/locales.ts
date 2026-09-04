@@ -40,6 +40,46 @@ export const zh = {
   unloading: '卸载中',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  tab: '外掛列表',
+  loading: '正在讀取外掛…',
+  error: '暫時無法讀取外掛。',
+  retry: '重試',
+  search: '搜尋外掛',
+  empty: '暫無外掛。',
+  emptySearch: '沒有匹配的外掛。',
+  presetTitle: '會話外掛',
+  presetSubtitle: '由 Agent 預設按會話組成',
+  countUnit: '個',
+  switcherLabel: '選擇要檢視的 Agent 預設',
+  presetOptionDefault: '{name}（預設）',
+  presetOptionBroken: '{name}（載入失敗）',
+  globalTitle: '全域性外掛',
+  globalSubtitle: '系統與所有會話共用',
+  presetProvidedDetail: '全域性已停用，由 Agent 預設按會話提供',
+  enabledIn: '啟用於',
+  viewInPreset: '去預設分組檢視',
+  matchesInOtherPresets: '其他預設中還有 {count} 個匹配：',
+  failedCountLabel: '個失敗',
+  enabledTag: '已啟用',
+  disabledTag: '已停用',
+  conditionalTag: '條件啟用',
+  presetEnabledTag: '預設中啟用',
+  failedTag: '啟動失敗',
+  moduleLabel: '完整名稱',
+  fromPreset: '來自',
+  condition: '禁用條件',
+  configuration: '配置狀態',
+  runtime: '執行狀態',
+  unobserved: '未執行',
+  pending: '等待依賴',
+  loadingPhase: '載入中',
+  active: '執行中',
+  failed: '啟動失敗',
+  unloading: '解除安裝中',
+} satisfies Record<string, string>
+
 /** Plugin inventory locale key union. */
 export type PluginInventoryLocaleKey = keyof typeof zh
 

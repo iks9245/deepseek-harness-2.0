@@ -12,6 +12,18 @@ export const zh = {
   'notice.attachmentsUnsupported': '/{command} 不接受附件，请先移除附件',
 } satisfies Record<string, string>
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'search.placeholder': '搜尋…',
+  'search.aria': '篩選選項',
+  'status.loading': '正在載入選項…',
+  'status.applying': '正在應用…',
+  'status.empty': '無選項',
+  'overlay.aria': '/{command} 選項',
+  'listbox.aria': '/{command} 匹配項',
+  'notice.attachmentsUnsupported': '/{command} 不接受附件，請先移除附件',
+} satisfies Record<string, string>
+
 /** The command namespace key union. */
 export type CommandKey = keyof typeof zh
 

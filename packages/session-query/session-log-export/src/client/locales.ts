@@ -13,6 +13,18 @@ export const zh = {
   'dialog.commandFailed': '无法启动 Session 导出。',
 } as const
 
+/** Traditional Chinese dictionary for Taiwan-oriented Web UI copy. */
+export const zhTW = {
+  'header.action': 'Session 日誌',
+  'dialog.preparingTitle': '正在匯出 Session',
+  'dialog.preparingDescription': '正在準備包含當前 Session、子 Session 和附件的 ZIP 檔案。',
+  'dialog.successTitle': 'Session 匯出已開始下載',
+  'dialog.successDescription': '瀏覽器正在下載 Session ZIP 檔案。',
+  'dialog.errorTitle': 'Session 匯出失敗',
+  'dialog.close': '關閉',
+  'dialog.commandFailed': '無法啟動 Session 匯出。',
+} as const
+
 /** English Session export strings. */
 export const en: Record<keyof typeof zh, string> = {
   'header.action': 'Session log',
