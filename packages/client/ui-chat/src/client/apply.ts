@@ -44,7 +44,7 @@ const CHAT_NODE_INJECT: ChatNodeTurnDataInjected = {
 /** Services required by the Chat target and its presentation registrations. */
 export const inject = [
   'slots', 'sessions', 'uiSession', 'uiConversation', 'layout', 'locale',
-  'settingsScope', 'remote', 'remote.session',
+  'settingsScope', 'remote', 'remote.session', 'remote.commands',
 ]
 
 /**
@@ -109,6 +109,12 @@ export function apply(ctx: Context): void {
         const session = binding.session
         const chat = chatSource(binding)
         return {
+          organizeKnowledge: async (cancel) => {
+            const result = await ctx.remote.commands.execute(sessionId, cancel ? '/knowledge-cancel' : '/knowledge-organize', [])
+            if (!result.ok) return result.error.message
+            if (result.value === undefined) return 'Knowledge organization is unavailable in this profile.'
+            return result.value.result.kind === 'error' ? result.value.result.text : null
+          },
           hooks: { transcriptView: transcriptView.mode },
           keyedHooks: {
             chatNode: key => chat.getSnapshot().nodes.source(key),

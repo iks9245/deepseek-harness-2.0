@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { makeTranslate } from '@deepseek-ai/dsh-client-test-runtime'
+import type { KnowledgeProjection, KnowledgeNodeId } from '@deepseek-ai/dsh-session-knowledge/client'
 import { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import { zhTW as commonZhTW } from '@deepseek-ai/dsh-client-locale/src/locales/zh-TW.ts'
 import type { KnowledgeWorkspaceProps } from '../src/client/knowledge/workspace-props.ts'
@@ -32,11 +33,86 @@ const document: KnowledgeDocument = {
 }
 
 function props(overrides: Partial<KnowledgeWorkspaceProps> = {}): KnowledgeWorkspaceProps {
-  return { document, mode: 'map', selectedId: null, bookmarks: [],
+  return { organization: undefined, organizeKnowledge: async () => null, running: false, document, mode: 'map', selectedId: null, bookmarks: [],
     openSource: vi.fn(), inspectTool: vi.fn(), openFile: vi.fn(), setMode: vi.fn(),
     readCard: vi.fn(), toggleBookmark: vi.fn(), saveReadingPosition: vi.fn(),
     loadHistory: vi.fn(), loadingHistory: false, canDraft: true, stageDraft: vi.fn(), t, ...overrides }
 }
+
+const organized: KnowledgeProjection = { stale: false, document: {
+  requestSeq: SessionSeq(9), throughSeq: SessionSeq(8), model: { provider: 'mock', model: 'research' },
+  sources: [{ seq: SessionSeq(5), turn: 1, turnSeq: SessionSeq(1) }],
+  map: { title: '整理後的研究', summary: '重點概要', nodes: [{ id: 'n1' as KnowledgeNodeId,
+    group: '主題一', kind: 'claim', title: '精簡的結論', summary: '結論說明',
+    sources: [{ seq: SessionSeq(5), quote: '完整答案內容。' }] }], relations: [] },
+} }
+
+describe('manual knowledge controls', () => {
+  it('waits for a click, keeps the old result after failure, and allows retry and source navigation', async () => {
+    const organizeKnowledge = vi.fn().mockResolvedValueOnce('Model failed').mockResolvedValueOnce(null)
+    const openSource = vi.fn()
+    render(<KnowledgeWorkspace {...props({ organization: organized, organizeKnowledge, openSource })} />)
+    expect(organizeKnowledge).not.toHaveBeenCalled()
+    expect(screen.getByText('整理後的研究')).toBeTruthy()
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.again'] })) })
+    expect(screen.getByRole('alert').textContent).toBe('Model failed')
+    expect(screen.getAllByText('精簡的結論')).toHaveLength(2)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.again'] })) })
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(organizeKnowledge).toHaveBeenNthCalledWith(2, false)
+    fireEvent.click(screen.getByRole('button', { name: /第 1 輪/ }))
+    expect(openSource).toHaveBeenCalledWith({ seq: 5, turn: 1, turnSeq: 1 })
+    fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.showSources'] }))
+    expect(screen.getByRole('region', { name: zhTW['knowledge.map.label'] })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.showOrganized'] }))
+    expect(screen.getByText('整理後的研究')).toBeTruthy()
+  })
+
+  it('shows thrown failures and remains available for another explicit attempt', async () => {
+    const organizeKnowledge = vi.fn().mockRejectedValueOnce(new Error('Network failed')).mockRejectedValueOnce('Disconnected')
+    render(<KnowledgeWorkspace {...props({ organizeKnowledge })} />)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.action'] })) })
+    expect(screen.getByRole('alert').textContent).toBe('Network failed')
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.action'] })) })
+    expect(screen.getByRole('alert').textContent).toBe('Disconnected')
+  })
+
+  it('shows only the selected point’s proposed relations and keeps incoming and outgoing evidence reachable', () => {
+    const record = organized.document!
+    const first = record.map.nodes[0]!
+    const second = { ...first, id: 'n2' as KnowledgeNodeId, group: '主題二', title: '第二要點' }
+    const third = { ...first, id: 'n3' as KnowledgeNodeId, title: '第三要點' }
+    const map = { ...record.map, nodes: [first, second, third], relations: [
+      { from: first.id, to: second.id, kind: 'supports' as const, explanation: '第一份關係依據', sources: first.sources },
+      { from: second.id, to: third.id, kind: 'contrasts' as const, explanation: '第二份關係依據', sources: first.sources },
+    ] }
+    render(<KnowledgeWorkspace {...props({ organization: { stale: false, document: { ...record, map } } })} />)
+    expect(screen.getByText('第一份關係依據')).toBeTruthy()
+    expect(screen.queryByText('第二份關係依據')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /第二要點/ }))
+    expect(screen.getByText('第一份關係依據')).toBeTruthy()
+    expect(screen.getByText('第二份關係依據')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /第三要點/ }))
+    expect(screen.queryByText('第一份關係依據')).toBeNull()
+    expect(screen.getByText('第二份關係依據')).toBeTruthy()
+  })
+
+  it('disables duplicate dispatch while pending, exposes cancellation, and marks outdated results', async () => {
+    let finish!: (error: string | null) => void
+    const done = new Promise<string | null>((resolve) => { finish = resolve })
+    const organizeKnowledge = vi.fn((cancel: boolean) => cancel ? Promise.resolve(null) : done)
+    const view = render(<KnowledgeWorkspace {...props({ organizeKnowledge })} />)
+    fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.action'] }))
+    expect(screen.getByRole('button', { name: zhTW['knowledge.organize.busy'] }).hasAttribute('disabled')).toBe(true)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: zhTW['knowledge.organize.cancel'] })) })
+    expect(organizeKnowledge).toHaveBeenNthCalledWith(2, true)
+    await act(async () => { finish('Cancelled'); await done })
+    expect(screen.queryByRole('button', { name: zhTW['knowledge.organize.cancel'] })).toBeNull()
+    view.rerender(<KnowledgeWorkspace {...props({ organization: { ...organized, stale: true }, running: true })} />)
+    expect(screen.getByText(zhTW['knowledge.organize.stale'])).toBeTruthy()
+    expect(screen.getByRole('button', { name: zhTW['knowledge.organize.again'] }).hasAttribute('disabled')).toBe(true)
+  })
+})
 
 describe('KnowledgeWorkspace', () => {
   it('opens a graph source in the reader and retains equivalent searchable list navigation', () => {
@@ -84,6 +160,35 @@ describe('KnowledgeWorkspace', () => {
     expect(within(screen.getByRole('navigation')).getAllByRole('button')).toHaveLength(200)
     fireEvent.click(screen.getByRole('button', { name: '載入完整對話' }))
     expect(loadHistory).toHaveBeenCalledOnce()
+  })
+
+  it('retains chapter filtering, excerpts, artifacts, and empty-title navigation beside the organization controls', () => {
+    const excerpts = [1, 2, 3].map(index => ({ id: `chapter-${index}`, kind: 'section' as const,
+      title: `尾章${index}`, summary: '原文要點', details: '原文全文', depth: 2, turn: 2 }))
+    const source: KnowledgeDocument = { ...document, excerpts, incomplete: true,
+      turns: [1, 2].map(turn => ({ turn, status: 'completed', source: { turn, turnSeq: SessionSeq(turn), seq: SessionSeq(turn) } })),
+      cards: [...document.cards, ...excerpts,
+        { id: 'question', kind: 'question', title: '研究問題', summary: '', details: '完整研究問題', turn: 2 },
+        { id: 'file', kind: 'artifact', title: 'report.md', summary: '', details: '', path: '/report.md' },
+        { id: 'empty', kind: 'answer', title: '', summary: '', details: '', turn: 1 }],
+    }
+    const readCard = vi.fn()
+    const shared = props({ document: source, readCard, loadingHistory: true })
+    const view = render(<KnowledgeWorkspace {...shared} />)
+    expect(screen.getByText('完整研究問題')).toBeTruthy()
+    expect(screen.getAllByText('report.md').length).toBeGreaterThan(0)
+    fireEvent.click(screen.getByRole('button', { name: '尾章1' }))
+    expect(readCard).toHaveBeenCalledWith('chapter-1')
+    fireEvent.click(screen.getByRole('tab', { name: '地圖' }))
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: '1' } })
+    expect(within(screen.getByRole('navigation')).queryByText('尾章1')).toBeNull()
+    fireEvent.change(select, { target: { value: '' } })
+    expect(within(screen.getByRole('navigation')).getByText('尾章1')).toBeTruthy()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'missing content' } })
+    expect(screen.getByText(zhTW['knowledge.navigator.empty'])).toBeTruthy()
+    view.rerender(<KnowledgeWorkspace {...shared} document={{ ...source, excerpts: [{ ...excerpts[0]!, depth: 1 }] }} />)
+    expect(screen.getByRole('button', { name: '尾章1' })).toBeTruthy()
   })
 
   it('creates an editable source-backed question without sending or replacing an occupied composer', () => {

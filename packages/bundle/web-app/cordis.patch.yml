@@ -67,6 +67,17 @@
     - id: file-reference-local
       name: '@deepseek-ai/dsh-file-reference-local'
 
+    - id: session-knowledge
+      name: '@deepseek-ai/dsh-session-knowledge'
+      config:
+        maxInputBytes: 260000
+        maxOutputBytes: 120000
+        maxOutputTokens: 8000
+        maxGroups: 6
+        maxNodes: 24
+        maxRelations: 24
+        timeoutMs: 120000
+
     # Whole-log turn/step counts for the chat stats strip (the sessionStats
     # projection key); the projection registry itself is a base-layer row.
     - id: session-stats

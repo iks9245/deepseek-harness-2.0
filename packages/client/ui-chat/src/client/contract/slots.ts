@@ -134,6 +134,8 @@ export interface ChatScrollPosition {
 
 /** Business callbacks injected into the Chat view. */
 export interface ChatViewInjected {
+  /** Explicit auxiliary knowledge command; returns a human error without changing the composer. */
+  organizeKnowledge: (cancel: boolean) => Promise<string | null>
   hooks: {
     /** Persisted completed-Turn transcript presentation. */
     transcriptView: SnapshotStore<TranscriptViewMode>

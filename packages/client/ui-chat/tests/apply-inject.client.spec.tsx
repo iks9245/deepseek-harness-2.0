@@ -53,7 +53,8 @@ async function bench() {
   const openWorkspacePath = vi.fn<ClientRemote['session']['openWorkspacePath']>(
     () => Promise.resolve({ ok: true, value: { opened: true } }),
   )
-  new TestRemote(runtime.ctx, { session: { openWorkspacePath } })
+  const execute = vi.fn<ClientRemote['commands']['execute']>()
+  new TestRemote(runtime.ctx, { session: { openWorkspacePath }, commands: { execute } })
   runtime.ctx.provide('uiWorkspace', {
     connectWorkspace: vi.fn(async () => ROOT),
   } as never)
@@ -83,10 +84,54 @@ async function bench() {
     ) => ChatViewInjected)(id, instance.actions)
     return { instance, injected }
   }
-  return { runtime, layout, openWorkspacePath, session, chatViewApi }
+  return { runtime, layout, openWorkspacePath, session, chatViewApi, execute }
 }
 
 describe('Chat inject API', () => {
+  it('dispatches explicit organization and cancellation and preserves transport and command failures', async () => {
+    const b = await bench()
+    const { injected } = b.chatViewApi(ROOT)
+    const command = { commandId: 'organize', result: { kind: 'success' } }
+    b.execute.mockResolvedValueOnce({ ok: true, value: command } as Awaited<ReturnType<ClientRemote['commands']['execute']>>)
+    expect(await injected.organizeKnowledge(false)).toBeNull()
+    expect(b.execute).toHaveBeenLastCalledWith(ROOT, '/knowledge-organize', [])
+    b.execute.mockResolvedValueOnce({ ok: true, value: undefined })
+    expect(await injected.organizeKnowledge(true)).toContain('unavailable')
+    expect(b.execute).toHaveBeenLastCalledWith(ROOT, '/knowledge-cancel', [])
+    b.execute.mockResolvedValueOnce({ ok: false, error: new RemoteError('gateway/internal', 'Disconnected', {}) })
+    expect(await injected.organizeKnowledge(false)).toBe('Disconnected')
+    b.execute.mockResolvedValueOnce({
+      ok: true, value: { ...command, result: { kind: 'error', text: 'No research' } },
+    } as Awaited<ReturnType<ClientRemote['commands']['execute']>>)
+    expect(await injected.organizeKnowledge(false)).toBe('No research')
+    await b.runtime.dispose()
+  })
+
+  it('shares keyed sources and produced files with the knowledge summary and details view', async () => {
+    const b = await bench()
+    const { injected, instance } = b.chatViewApi(ROOT)
+    expect(injected.keyedHooks.chatNode('missing')).toBe(injected.keyedHooks.chatNode('missing'))
+    expect(injected.keyedHooks.chatNodeProcess('missing')).toBe(injected.keyedHooks.chatNodeProcess('missing'))
+    injected.openDetails({ turnSeq: 2, callId: 'c1' })
+    injected.openKnowledgeSummary()
+    expect(instance.store.getSnapshot().selection).toBeNull()
+    const entry = b.runtime.slots.entries('details')[0]!
+    const details = (entry.inject as unknown as () => DetailsInjected)()
+    const turn: Parameters<ChatViewInjected['producedFiles']>[0] = {
+      turn: 2, start: undefined, end: undefined, status: 'unknown', steps: [],
+      data: { get: () => undefined, source: () => ({ getSnapshot: () => undefined, subscribe: () => () => {} }) },
+    }
+    expect(injected.producedFiles(turn)).toEqual([])
+    expect(details.producedFiles(turn)).toEqual([])
+    const files = [{ path: '/report.md' }]
+    const producedForTurn = vi.fn(() => files)
+    b.runtime.ctx.provide('chatFileMentions', { producedForTurn } as never)
+    expect(injected.producedFiles(turn)).toBe(files)
+    expect(details.producedFiles(turn)).toBe(files)
+    expect(producedForTurn).toHaveBeenCalledWith(turn)
+    await b.runtime.dispose()
+  })
+
   it('loads older history and forks through the Session Controller', async () => {
     const b = await bench()
     const { injected } = b.chatViewApi(ROOT)

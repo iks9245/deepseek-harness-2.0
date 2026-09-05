@@ -223,7 +223,7 @@ export function ChatView({
   useSession, useChat, useChatNode, useChatNodeProcess, useSessions, useStore, actions, renderSlot,
   sessionId, openFile, loadOlder, loadThrough, loadImage, openView, chatScroll, forkAt, fileMentions,
   openKnowledgeSummary, openDetails, producedFiles,
-  useTranscriptView, useProjection, useInput, inputActions, t,
+  useTranscriptView, useProjection, useInput, inputActions, organizeKnowledge, t,
 }: ChatViewSlotProps) {
   const order = useChat(s => s.order)
   const nodeStore = useChat(s => s.nodes)
@@ -235,6 +235,7 @@ export function ChatView({
   // Host-computed whole-log outline; the merge is view-layer only (the
   // conversation snapshot never carries projection values).
   const turnOutline = useProjection('turnOutline')
+  const organization = useProjection('knowledge')
   const timeline = useChat(s => s.timeline)
   const hasMore = useSession(s => s.hasMore)
   const knowledgeDocument = useMemo(
@@ -810,6 +811,10 @@ export function ChatView({
       {knowledgeMode === 'map' || knowledgeMode === 'reading'
         ? (
           <KnowledgeWorkspace
+            key={sessionId}
+            organization={organization}
+            organizeKnowledge={organizeKnowledge}
+            running={running}
             document={knowledgeDocument}
             mode={knowledgeMode}
             selectedId={selectedKnowledgeId}

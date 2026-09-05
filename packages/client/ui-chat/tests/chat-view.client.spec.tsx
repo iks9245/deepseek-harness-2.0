@@ -372,11 +372,12 @@ function makeHarness(
     useConversation: bindSnapshotSelector(createSnapshotStore(EMPTY_CONVERSATION_SNAPSHOT)),
     useTrajectory: (() => { throw new Error('unused') }),
     useSessions: emptySessions(),
+    organizeKnowledge: async () => null,
     useSessionPendingInteraction: bindSnapshotSelector(
       createSnapshotStore<SessionPendingInteractionSnapshot>(new Map()),
     ),
     useWorkspaces: emptyWorkspaces(),
-    useProjection: () => outlineValue,
+    useProjection: (key: string) => key === 'turnOutline' ? outlineValue : undefined,
     useInput: bindSnapshotSelector(createSnapshotStore({ draft: '', phase: 'plain' as const, attachmentIds: [], draftRev: 0, occurrences: [], queue: [] })),
     inputActions: {
       setDraft: () => {},

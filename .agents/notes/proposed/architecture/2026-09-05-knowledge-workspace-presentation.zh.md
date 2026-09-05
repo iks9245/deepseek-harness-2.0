@@ -12,7 +12,7 @@ Web 客户端为每个会话提供一个线性的聊天视图。`ChatSnapshot` �
 
 ## Proposal
 
-已加载窗口的实现遵循[来源决策](../../implemented/architecture/2026-09-05-knowledge-source-provenance.zh.md)。[阅读与比较决策](../../implemented/feature/2026-09-05-knowledge-reading-comparison.zh.md)覆盖章节导航、完整 Markdown 阅读、结构地图与来源比较。下述全历史投影和结构化摘要仍属于提案。
+已加载窗口实现遵循[来源决策](../../implemented/architecture/2026-09-05-knowledge-source-provenance.zh.md)及[阅读与比较决策](../../implemented/feature/2026-09-05-knowledge-reading-comparison.zh.md)。[手动整理决策](../../implemented/feature/2026-09-05-manual-knowledge-organization.zh.md)提供有界结构化生产者和持久地图投影。下述完整章节点投影、协调导航和评估目标仍属于提案。
 
 Web 客户端新增知识工作区 Conversation View。它把会话投影为一个 `KnowledgeDocument`，其章节、卡片、关系、摘要、行动、风险和引用都具有稳定的不透明标识符。
 

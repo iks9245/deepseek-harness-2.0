@@ -11,6 +11,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { delimiter as pathDelimiter } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-compaction'
+import type {} from '@deepseek-ai/dsh-session-knowledge/types'
 import type {} from '@deepseek-ai/dsh-deepseek-llm-api-extensions'
 import { SESSION_FORMAT_VERSION, SessionLogOffset, type SessionEvent } from '@deepseek-ai/dsh-session'
 import type { SessionLogOffset as SessionLogOffsetType } from '@deepseek-ai/dsh-session'
@@ -622,7 +623,8 @@ export function parseSessionHeader(text: string): {
  *
  * Reads one embedded stream from each Assistant settlement. A `compaction/summary` explicitly marked
  * as one local LLM-stream call becomes a canonical successful stream from its
- * complete `rawOutput` at the summary's log position. A
+ * complete `rawOutput` at the summary's log position. A successful `knowledge/document`
+ * replays its exact JSON output at the document's log position. A
  * missing assistant terminator means the live stream threw, so derivation
  * rejects and the scenario must provide an explicit override. Multiple calls
  * may share one turn and step when the loop retries.
@@ -642,6 +644,13 @@ export function deriveReplayScript(events: SessionEvent[]): ReplayEntry[] {
     script.push({ kind: 'chunks', chunks })
   }
   for (const event of events) {
+    if (event.type === 'knowledge/document') {
+      script.push({ kind: 'chunks', chunks: [
+        { type: 'text-delta', index: 0, text: event.data.rawOutput },
+        { type: 'finish', reason: { kind: 'stop' } },
+      ] })
+      continue
+    }
     if (event.type === 'compaction/summary') {
       // JSONL decoding crosses an untyped durable boundary, so retain its wider
       // shape even though current in-process producers enforce this correlation.
