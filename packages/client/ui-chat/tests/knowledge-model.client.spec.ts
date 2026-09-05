@@ -49,6 +49,13 @@ function assemble(entries: readonly SessionEventLikeEntry[], incomplete = false)
 }
 
 describe('knowledge sources from assembled Session events', () => {
+  it('maps rendered reference-style links without treating literal code as a source', () => {
+    const text = '## Evidence\n\n[Source][ref]\n\n`[Literal](https://example.test/code)`\n\n[ref]: https://example.test/source'
+    const document = assemble(eventsFor(1, 'completed', text)).read()
+    expect(document.cards.filter(card => card.kind === 'reference').map(card => card.url)).toEqual(['https://example.test/source'])
+    expect(document.edges).toContainEqual({ from: 'answer:27', to: 'reference:27:https://example.test/source' })
+  })
+
   it('uses the actual assistant-step payload and preserves complete source text', () => {
     const text = `## Research\n\n${'Detailed evidence. '.repeat(30)}\n\nFinal paragraph.\n\n[Source](https://example.test/source)`
     const document = assemble(eventsFor(1, 'completed', text)).read()

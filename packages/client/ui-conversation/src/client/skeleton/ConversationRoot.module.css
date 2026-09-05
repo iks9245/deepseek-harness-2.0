@@ -270,9 +270,9 @@
   opacity: 1;
 }
 
-/* Views that elect a composer overlay (trajectory etc.) own their full-bleed
-   scrollers; the strips would sit over their content and steal clicks. */
-.root:has([data-conversation-composer-overlay]) .widthHandle {
+/* Full-width views and composer overlays place controls outside the transcript
+   width; the resize strips would intercept those controls. */
+.root:has([data-conversation-composer-overlay], [data-conversation-full-width]) .widthHandle {
   display: none;
 }
 

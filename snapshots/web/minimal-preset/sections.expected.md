@@ -1,11 +1,7 @@
 - article:
-  - button "Section Attention" [expanded]:
-    - img
-    - text: Section
-    - strong: Attention
-    - img
-  - paragraph: Attention evidence stays with its original section.
-  - text: "## Attention Attention evidence stays with its original section."
+  - text: Section · Turn 1
+  - heading "Attention" [level=3]
   - button "View original conversation"
   - button "Add bookmark"
-  - text: Turn 1
+  - heading "Attention" [level=2]
+  - paragraph: Attention evidence stays with its original section.

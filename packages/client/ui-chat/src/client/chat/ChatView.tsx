@@ -223,7 +223,7 @@ export function ChatView({
   useSession, useChat, useChatNode, useChatNodeProcess, useSessions, useStore, actions, renderSlot,
   sessionId, openFile, loadOlder, loadThrough, loadImage, openView, chatScroll, forkAt, fileMentions,
   openKnowledgeSummary, openDetails, producedFiles,
-  useTranscriptView, useProjection, t,
+  useTranscriptView, useProjection, useInput, inputActions, t,
 }: ChatViewSlotProps) {
   const order = useChat(s => s.order)
   const nodeStore = useChat(s => s.nodes)
@@ -263,7 +263,8 @@ export function ChatView({
   const sourceProcess = useStore(s => s.turnProcesses.find(entry => entry.turn === s.knowledgeSource?.turn))
   const selectedKnowledgeId = useStore(s => s.selectedKnowledgeId)
   const knowledgeBookmarks = useStore(s => s.knowledgeBookmarks)
-  const expandedKnowledgeCards = useStore(s => s.expandedKnowledgeCards)
+  const knowledgeReadingPosition = useStore(s => s.knowledgeReadingPosition)
+  const canDraft = useInput(s => s.phase === 'plain' && s.draft === '')
   const compactTranscript = useTranscriptView(mode => mode === 'compact')
   useEffect(() => {
     if (knowledgeMode !== 'transcript') openKnowledgeSummary()
@@ -271,12 +272,6 @@ export function ChatView({
   const inspectKnowledgeTool = (card: KnowledgeCard): void => {
     if (card.tool === undefined || card.source === undefined) return
     openDetails({ turnSeq: card.source.turnSeq, callId: card.tool.callId, toolName: card.tool.name })
-  }
-  const selectKnowledge = (id: string): void => {
-    actions.selectKnowledge(id)
-    const card = knowledgeDocument.cards.find(candidate => candidate.id === id)
-    if (card?.kind === 'tool') inspectKnowledgeTool(card)
-    else openKnowledgeSummary()
   }
   const inspectCall = useCallback((callId: string) => {
     openView('trajectory', callId)
@@ -811,7 +806,7 @@ export function ChatView({
   }, [actions, knowledgeMode, knowledgeSource, navigateToTurn, nodeStore, railItems, sourceProcess])
 
   return (
-    <div className={css.root}>
+    <div className={css.root} data-conversation-full-width={knowledgeMode !== 'transcript' || undefined}>
       {knowledgeMode === 'map' || knowledgeMode === 'reading'
         ? (
           <KnowledgeWorkspace
@@ -819,15 +814,22 @@ export function ChatView({
             mode={knowledgeMode}
             selectedId={selectedKnowledgeId}
             bookmarks={knowledgeBookmarks}
-            expandedCards={expandedKnowledgeCards}
+            readingPosition={knowledgeReadingPosition}
+            saveReadingPosition={actions.saveKnowledgeReadingPosition}
+            readCard={actions.readKnowledgeCard}
+            loadHistory={() => {
+              const first = knowledgeDocument.turns[0]
+              if (first !== undefined) void loadThrough(first.source.turnSeq)
+            }}
+            loadingHistory={loadingOlder}
+            canDraft={canDraft}
+            stageDraft={(text) => { if (canDraft) inputActions.setDraft(text) }}
             setMode={actions.setKnowledgeMode}
             openTranscript={() => { actions.setKnowledgeMode('transcript') }}
             openSource={actions.requestKnowledgeSource}
             inspectTool={inspectKnowledgeTool}
             openFile={requestOpenFile}
-            select={selectKnowledge}
             toggleBookmark={actions.toggleKnowledgeBookmark}
-            toggleCard={actions.toggleKnowledgeCard}
             t={t}
           />
         )

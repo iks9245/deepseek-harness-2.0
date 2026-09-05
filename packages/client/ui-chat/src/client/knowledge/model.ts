@@ -1,7 +1,7 @@
 /** Source-addressed excerpts and activity from resolved Chat turns; never inferred research findings. */
 
 import type { ConversationTimelineSnapshot, TurnLocation } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { extractMarkdownSections, type MarkdownSection } from '@deepseek-ai/dsh-client-ui-primitives'
+import { extractMarkdownPlainText, extractMarkdownReferences, extractMarkdownSections, type MarkdownSection } from '@deepseek-ai/dsh-client-ui-primitives'
 import { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import type { TurnOutlineEntry } from '@deepseek-ai/dsh-session-turn-outline/client'
 import type { AssistantChatData, ChatConversationViewNode, ChatNode } from '../contract/chat-nodes.ts'
@@ -27,6 +27,9 @@ export interface KnowledgeCard {
   readonly tool?: { readonly callId: string; readonly name: string }
   readonly path?: string
   readonly url?: string
+  /** Source heading ancestry; an empty heading remains navigable. */
+  readonly parentId?: string
+  readonly depth?: number
 }
 
 const sectionCache = new WeakMap<object, readonly MarkdownSection[]>()
@@ -145,7 +148,7 @@ export function deriveKnowledgeDocument(
       && !assistant.data.blocks.some(block => block.kind === 'tool-call')) {
       const answer: KnowledgeCard = {
         id: `answer:${String(final.seq)}`, kind: 'answer', turn: turn.turn,
-        title: preview(text, 72), summary: preview(text), details: text,
+        title: preview(extractMarkdownPlainText(text, { mode: 'first-line' }), 72), summary: preview(extractMarkdownPlainText(text)), details: text,
         source: { ...turn.source, seq: SessionSeq(final.seq), nodeKey: assistant.key },
       }
       cards.push(answer)
@@ -155,24 +158,24 @@ export function deriveKnowledgeDocument(
         sections = extractMarkdownSections(text)
         sectionCache.set(final, sections)
       }
-      const sectionCards: KnowledgeCard[] = sections.flatMap((section) => {
+      const parents: { depth: number; id: string }[] = []
+      const sectionCards: KnowledgeCard[] = sections.map((section) => {
+        while (parents.at(-1) !== undefined && (parents.at(-1)?.depth ?? 0) >= section.depth) parents.pop()
+        const parentId = parents.at(-1)?.id ?? answer.id
+        const id = `section:${String(final.seq)}:${String(section.start)}`
+        parents.push({ depth: section.depth, id })
         const body = text.slice(section.bodyStart, section.end).trim()
-        if (body === '') return []
-        return [{
-          id: `section:${String(final.seq)}:${String(section.start)}`, kind: 'section', turn: turn.turn,
-          title: section.title, summary: preview(body), details: text.slice(section.start, section.end).trim(),
+        return {
+          id, kind: 'section', turn: turn.turn, parentId, depth: section.depth,
+          title: section.title, summary: preview(extractMarkdownPlainText(body)), details: text.slice(section.start, section.end).trim(),
           source: { ...turn.source, seq: SessionSeq(final.seq), nodeKey: assistant.key },
-        }]
+        }
       })
       cards.push(...sectionCards)
-      excerpts.push(...sectionCards.length > 0 ? sectionCards : [answer])
-      edges.push(...sectionCards.map(card => ({ from: answer.id, to: card.id })))
-      const links = new Map<string, string>()
-      for (const match of text.matchAll(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g)) {
-        const [, label, url] = match
-        if (label !== undefined && url !== undefined) links.set(url, label)
-      }
-      for (const [url, label] of links) {
+      const readable = sectionCards.filter(card => card.summary !== '')
+      excerpts.push(...readable.length > 0 ? readable : [answer])
+      edges.push(...sectionCards.map(card => ({ from: card.parentId ?? answer.id, to: card.id })))
+      for (const { url, label } of extractMarkdownReferences(text)) {
         const id = `reference:${String(final.seq)}:${url}`
         cards.push({ id, kind: 'reference', title: label, summary: url, details: '', url, turn: turn.turn, source: { ...turn.source, seq: SessionSeq(final.seq), nodeKey: assistant.key } })
         edges.push({ from: answer.id, to: id })

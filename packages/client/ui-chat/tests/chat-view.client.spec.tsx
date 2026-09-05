@@ -377,7 +377,7 @@ function makeHarness(
     ),
     useWorkspaces: emptyWorkspaces(),
     useProjection: () => outlineValue,
-    useInput: (() => { throw new Error('unused') }),
+    useInput: bindSnapshotSelector(createSnapshotStore({ draft: '', phase: 'plain' as const, attachmentIds: [], draftRev: 0, occurrences: [], queue: [] })),
     inputActions: {
       setDraft: () => {},
       addAttachments: () => true,
