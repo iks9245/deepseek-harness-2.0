@@ -1,0 +1,53 @@
+- banner:
+  - navigation "Session hierarchy":
+    - button "Use the bash tool to" [disabled]
+  - img
+  - text: Minimal mode
+  - button "Session log":
+    - text: Session log
+    - img
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: Knowledge workspace
+- heading "Knowledge map" [level=2]
+- paragraph: "Use the bash tool to run exactly: printf 'MINIMAL…"
+- tablist "Knowledge view":
+  - tab "Map" [selected]
+  - tab "Reading"
+  - tab "Transcript"
+- region "Task status":
+  - paragraph:
+    - text: Turn 1 · Completed
+    - button "View original conversation"
+- 'button "Topic Use the bash tool to run exactly: printf ''MINIMAL…"':
+  - img
+  - text: Topic
+  - strong: "Use the bash tool to run exactly: printf 'MINIMAL…"
+- 'button "Question Use the bash tool to run exactly: printf ''MINIMAL_BASH_CARD_OK\\n''. Then… Use the bash tool to run exactly: printf ''MINIMAL_BASH_CARD_OK\\n''. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop. Completed"':
+  - img
+  - text: Question
+  - strong: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then…"
+  - text: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop. Completed"
+- button "Answer MINIMAL_PRESET_REQUEST_OK MINIMAL_PRESET_REQUEST_OK":
+  - img
+  - text: Answer
+  - strong: MINIMAL_PRESET_REQUEST_OK
+  - text: MINIMAL_PRESET_REQUEST_OK
+- button "Tool activity bash Completed":
+  - img
+  - text: Tool activity
+  - strong: bash
+  - text: Completed
+- textbox "Message or run a task... / commands, @ files or sessions"
+- button "Commands":
+  - img
+- button "Add attachment":
+  - img
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current DeepSeek-V4-Flash":
+  - text: DeepSeek-V4-Flash
+  - img
+- button "0% of context used"
+- button "Send message" [disabled]
+- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 20 tok · Output 8 tok

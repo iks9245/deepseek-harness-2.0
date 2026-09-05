@@ -9,13 +9,16 @@ import type { SessionSeq } from '@deepseek-ai/dsh-session/types'
 import { Button, IconChevronDownOutline14, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps } from '../contract/slots.ts'
 import type { ChatSnapshot } from '../contract/snapshot.ts'
+import { TURN_PROCESS_INDEPENDENT_KINDS } from '../contract/turn-process.ts'
 import { PendingSteeringBubble, PendingSubmissionBubble } from './MessageItem.tsx'
 import { ChatNodeSeat } from './ChatNodeSeat.tsx'
 import { TurnNavigator } from './TurnNavigator.tsx'
 import { mergeTurnRailItems, type TurnRailItem } from './turn-rail-items.ts'
 import { formatRunDuration } from './message-chrome.ts'
-import { deriveKnowledgeDocument } from '../knowledge/model.ts'
+import { deriveKnowledgeDocument, type KnowledgeCard } from '../knowledge/model.ts'
 import { KnowledgeWorkspace } from '../knowledge/KnowledgeWorkspace.tsx'
+import { KnowledgeStatusSummary } from '../knowledge/ExecutiveSummary.tsx'
+import { KnowledgeActions } from '../knowledge/KnowledgeActions.tsx'
 import css from './ChatView.module.css'
 
 const FOLLOW_THRESHOLD = 24
@@ -219,7 +222,7 @@ const ChatNodeList = memo(function ChatNodeList({ order, ...seatProps }: ChatNod
 export function ChatView({
   useSession, useChat, useChatNode, useChatNodeProcess, useSessions, useStore, actions, renderSlot,
   sessionId, openFile, loadOlder, loadThrough, loadImage, openView, chatScroll, forkAt, fileMentions,
-  openKnowledgeSummary,
+  openKnowledgeSummary, openDetails, producedFiles,
   useTranscriptView, useProjection, t,
 }: ChatViewSlotProps) {
   const order = useChat(s => s.order)
@@ -232,30 +235,49 @@ export function ChatView({
   // Host-computed whole-log outline; the merge is view-layer only (the
   // conversation snapshot never carries projection values).
   const turnOutline = useProjection('turnOutline')
+  const timeline = useChat(s => s.timeline)
+  const hasMore = useSession(s => s.hasMore)
   const knowledgeDocument = useMemo(
-    () => deriveKnowledgeDocument(turnOutline, nodeValues),
-    [nodeValues, turnOutline],
+    () => deriveKnowledgeDocument(turnOutline, nodeValues, timeline, producedFiles, hasMore),
+    [nodeValues, turnOutline, timeline, producedFiles, hasMore],
   )
   const railItems = useMemo(
     () => mergeTurnRailItems(turnNavigationItems, turnOutline),
     [turnNavigationItems, turnOutline],
   )
-  const timeline = useChat(s => s.timeline)
   const inbox = useSession(s => s.queue)
   // Workspace root off the session list row: path summaries display relative to it.
   const cwd = useSessions(s => s.byId[sessionId]?.cwd)
   const running = useSession(s => s.running)
   const openState = useSession(s => s.openState)
   const openError = useSession(s => s.openError)
-  const hasMore = useSession(s => s.hasMore)
   const loadingOlder = useSession(s => s.loadingOlder)
   const selectedCallId = useStore(s => s.selection?.callId)
-  const knowledgeMode = useStore(s => s.knowledgeMode)
+  const preferredKnowledgeMode = useStore(s => s.knowledgeMode)
+  const latestKnowledgeTurn = knowledgeDocument.turns.at(-1)
+  const knowledgeMode = preferredKnowledgeMode === 'auto'
+    ? latestKnowledgeTurn?.status === 'completed'
+      && knowledgeDocument.excerpts.some(card => card.turn === latestKnowledgeTurn.turn) ? 'map' : 'transcript'
+    : preferredKnowledgeMode
+  const knowledgeSource = useStore(s => s.knowledgeSource)
+  const sourceProcess = useStore(s => s.turnProcesses.find(entry => entry.turn === s.knowledgeSource?.turn))
   const selectedKnowledgeId = useStore(s => s.selectedKnowledgeId)
   const knowledgeBookmarks = useStore(s => s.knowledgeBookmarks)
   const expandedKnowledgeCards = useStore(s => s.expandedKnowledgeCards)
   const compactTranscript = useTranscriptView(mode => mode === 'compact')
-  useEffect(() => { openKnowledgeSummary() }, [openKnowledgeSummary])
+  useEffect(() => {
+    if (knowledgeMode !== 'transcript') openKnowledgeSummary()
+  }, [knowledgeMode, openKnowledgeSummary])
+  const inspectKnowledgeTool = (card: KnowledgeCard): void => {
+    if (card.tool === undefined || card.source === undefined) return
+    openDetails({ turnSeq: card.source.turnSeq, callId: card.tool.callId, toolName: card.tool.name })
+  }
+  const selectKnowledge = (id: string): void => {
+    actions.selectKnowledge(id)
+    const card = knowledgeDocument.cards.find(candidate => candidate.id === id)
+    if (card?.kind === 'tool') inspectKnowledgeTool(card)
+    else openKnowledgeSummary()
+  }
   const inspectCall = useCallback((callId: string) => {
     openView('trajectory', callId)
   }, [openView])
@@ -763,6 +785,31 @@ export function ChatView({
       : { key: landed.dataset.chatAnchorKey, top: flowTop(landed, el) }
   }, [loadingOlder, loadThrough])
 
+  useEffect(() => {
+    if (knowledgeSource === null || knowledgeSource === undefined || knowledgeMode !== 'transcript') return
+    const item = railItems.find(candidate => candidate.turn === knowledgeSource.turn)
+    if (item === undefined) return
+    const key = knowledgeSource.nodeKey
+    if (key !== undefined) {
+      const process = nodeStore.processSource(key).getSnapshot()
+      const node = nodeStore.get(key)
+      if (node !== undefined && !TURN_PROCESS_INDEPENDENT_KINDS.has(node.kind)
+        && process !== undefined && process.spec.answerStep !== null && process.spec.answerAnchorSeq !== null
+        && node.anchorSeq >= process.spec.processStartSeq && node.anchorSeq < process.spec.answerAnchorSeq
+        && sourceProcess?.answerStep !== process.spec.answerStep) {
+        actions.setTurnProcessOpen(process.turn, process.spec.answerStep, true)
+        return
+      }
+    }
+    navigateToTurn({
+      ...item,
+      anchor: key !== undefined && nodeStore.get(key) !== undefined
+        ? { kind: 'loaded', key }
+        : { kind: 'unloaded', seq: knowledgeSource.turnSeq },
+    })
+    actions.requestKnowledgeSource(null)
+  }, [actions, knowledgeMode, knowledgeSource, navigateToTurn, nodeStore, railItems, sourceProcess])
+
   return (
     <div className={css.root}>
       {knowledgeMode === 'map' || knowledgeMode === 'reading'
@@ -775,13 +822,27 @@ export function ChatView({
             expandedCards={expandedKnowledgeCards}
             setMode={actions.setKnowledgeMode}
             openTranscript={() => { actions.setKnowledgeMode('transcript') }}
-            select={actions.selectKnowledge}
+            openSource={actions.requestKnowledgeSource}
+            inspectTool={inspectKnowledgeTool}
+            openFile={requestOpenFile}
+            select={selectKnowledge}
             toggleBookmark={actions.toggleKnowledgeBookmark}
             toggleCard={actions.toggleKnowledgeCard}
             t={t}
           />
         )
         : null}
+      {knowledgeMode === 'transcript' && (
+        <KnowledgeStatusSummary document={knowledgeDocument} openSource={actions.requestKnowledgeSource} t={t} />
+      )}
+      {knowledgeMode === 'transcript' && knowledgeDocument.cards.filter(card => card.kind === 'artifact').map(card => (
+        <div key={card.id}>
+          <span>{t('knowledge.kind.artifact')}: {card.title}</span>
+          <KnowledgeActions
+            card={card} openSource={actions.requestKnowledgeSource} inspectTool={inspectKnowledgeTool} openFile={requestOpenFile} t={t}
+          />
+        </div>
+      ))}
       {knowledgeMode === 'transcript' && (
         <button
           type="button"

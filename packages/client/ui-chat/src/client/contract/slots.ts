@@ -42,8 +42,14 @@ export interface AssistantActionOwnerProps {
   messageId: MessageId
 }
 
-/** Optional prose file-mention provider consumed by Chat. */
+/** Optional file-reference and produced-artifact provider consumed by Chat. */
 export interface ChatFileMentions {
+  /**
+   * Read successful file mutations recorded in the loaded Turn.
+   * @param turn - Recorded Turn location.
+   * @returns produced paths with their recorded result sequence.
+   */
+  producedForTurn(turn: TurnLocation): readonly { readonly seq: number; readonly path: string }[]
   /**
    * Resolve prose links for one closing Turn.
    * @param owner - closing-Turn identity and file opener.
@@ -152,6 +158,7 @@ export interface ChatViewInjected {
   }
   forkAt: (seq: number) => void
   fileMentions: (owner: TurnTailOwnerProps) => MarkdownFileMentions | undefined
+  producedFiles: ChatFileMentions['producedForTurn']
 }
 
 /** Full Chat view props. */
@@ -168,6 +175,7 @@ export type MessageImagesProps = PropsRuntime<'conversation.message.images'> & P
 /** Details-panel callbacks. */
 export interface DetailsInjected {
   closeDetails: () => void
+  producedFiles: ChatFileMentions['producedForTurn']
 }
 
 /** Full details-panel props. */

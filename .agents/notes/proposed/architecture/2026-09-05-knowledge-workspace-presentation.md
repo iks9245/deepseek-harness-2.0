@@ -12,6 +12,8 @@ Large assistant answers therefore make their structure discoverable only by read
 
 ## Proposal
 
+The loaded-window implementation follows the [source-provenance decision](../../implemented/architecture/2026-09-05-knowledge-source-provenance.md). The full-history projection and structured summaries below remain proposed.
+
 The Web client gains a Knowledge Workspace Conversation View. It projects a Session into a `KnowledgeDocument` whose sections, cards, relationships, summaries, actions, risks, and references have stable opaque identifiers.
 
 The presentation consumes this model in three coordinated regions: a `sidebar.knowledge` navigator lists the expandable section tree and jumps to card identifiers; the center renders summary-first cards with detail disclosure and reading progress; and a general details host renders the executive summary, selected-card context, and saved bookmarks. The current tool inspector becomes one details-host contributor instead of owning the entire right column, while [Client Tool presentation ownership](../../implemented/architecture/2026-08-08-client-tool-presentation-ownership.md) continues to own its Tool-specific rendering.

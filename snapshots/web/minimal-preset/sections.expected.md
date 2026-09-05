@@ -1,0 +1,11 @@
+- article:
+  - button "Section Attention" [expanded]:
+    - img
+    - text: Section
+    - strong: Attention
+    - img
+  - paragraph: Attention evidence stays with its original section.
+  - text: "## Attention Attention evidence stays with its original section."
+  - button "View original conversation"
+  - button "Add bookmark"
+  - text: Turn 1

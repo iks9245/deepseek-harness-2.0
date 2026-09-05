@@ -1,70 +1,88 @@
-/** Always-available executive summary for the current Knowledge Workspace. */
+/** Recorded turn outcomes and explicitly labelled original excerpts. */
 
-import {
-  IconCheckOutline16, IconChecklistOutline14, IconSparkle16, IconWarningOutline16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
 import type { DetailsSlotProps } from '../contract/slots.ts'
+import type { ChatSourceTarget } from '../contract/store.ts'
 import type { KnowledgeCard, KnowledgeDocument } from './model.ts'
+import { KnowledgeActions } from './KnowledgeActions.tsx'
 import css from './ExecutiveSummary.module.css'
 
-function SummarySection({ title, items, icon }: {
-  title: string
-  items: readonly string[]
-  icon: 'finding' | 'decision' | 'action' | 'risk' | 'bookmark'
+/**
+ * Render completion state independently from available text and produced files.
+ * @param props - Loaded document, exact source navigation, and locale seat.
+ * @returns the latest recorded outcome and explicit summary/coverage limitations.
+ */
+export function KnowledgeStatusSummary({ document, openSource, t }: {
+  document: KnowledgeDocument
+  openSource: (source: ChatSourceTarget) => void
+  t: DetailsSlotProps['t']
 }) {
-  const Icon = icon === 'finding'
-    ? IconSparkle16
-    : icon === 'decision'
-      ? IconCheckOutline16
-      : icon === 'action' || icon === 'bookmark'
-        ? IconChecklistOutline14
-        : IconWarningOutline16
-  if (items.length === 0) return null
+  const latest = document.turns.at(-1)
   return (
-    <section className={css.section} data-kind={icon}>
-      <h3><Icon size={14} />{title}</h3>
-      <ul>{items.map((item, index) => <li key={`${String(index)}:${item}`}>{item}</li>)}</ul>
+    <section className={css.section} aria-label={t('knowledge.status.label')}>
+      {latest !== undefined && (
+        <p>
+          {t('knowledge.turn', { turn: latest.turn })} · {t(`knowledge.status.${latest.status}`)}{' '}
+          <button type="button" onClick={() => { openSource(latest.source) }}>{t('knowledge.source.open')}</button>
+        </p>
+      )}
+      {document.incomplete && <p>{t('knowledge.coverage.partial')}</p>}
+      {document.excerpts.length === 0 && <p>{t('knowledge.summary.empty')}</p>}
+      {document.cards.some(card => card.kind === 'artifact') && latest?.status !== 'completed' && (
+        <p>{t('knowledge.artifacts.partial')}</p>
+      )}
     </section>
   )
 }
 
 /**
- * Render the summary, selected card, and fast-scan action/risk groups.
- * @param props - Projected document, selected card, bookmark state, and locale seat.
- * @returns the right-column summary body.
+ * Render source-labelled excerpts, recorded outcomes, selection, and navigable bookmarks.
+ * @param props - Source document and shared reader/inspector actions.
+ * @returns the right-column source overview without inferred findings or decisions.
  */
-export function ExecutiveSummary({ document, selected, bookmarks, onToggleBookmark, t }: {
+export function ExecutiveSummary({ document, selected, bookmarks, onToggleBookmark, openSource, inspectTool, readCard, t }: {
   document: KnowledgeDocument
   selected: KnowledgeCard | undefined
   bookmarks: readonly string[]
   onToggleBookmark: () => void
+  openSource: (source: ChatSourceTarget) => void
+  inspectTool: (card: KnowledgeCard) => void
+  readCard: (id: string) => void
   t: DetailsSlotProps['t']
 }) {
   const bookmarked = selected !== undefined && bookmarks.includes(selected.id)
-  const bookmarkLabels = bookmarks.flatMap((id) => {
-    const card = document.cards.find(candidate => candidate.id === id)
-    return card === undefined ? [] : [card.title || t(`knowledge.kind.${card.kind}`)]
-  })
+  const saved = document.cards.filter(card => bookmarks.includes(card.id))
+  const artifacts = document.cards.filter(card => card.kind === 'artifact')
   return (
     <div className={css.root}>
+      <KnowledgeStatusSummary document={document} openSource={openSource} t={t} />
       {selected !== undefined && (
         <section className={css.focus}>
           <div className={css.focusMeta}>{t(`knowledge.kind.${selected.kind}`)}</div>
           <h3>{selected.title || t(`knowledge.kind.${selected.kind}`)}</h3>
-          <p>{selected.summary}</p>
+          {selected.summary !== '' && <p>{selected.summary}</p>}
+          {selected.status !== undefined && <p>{t(`knowledge.status.${selected.status}`)}</p>}
+          <KnowledgeActions card={selected} openSource={openSource} inspectTool={inspectTool} readCard={readCard} t={t} />
           <button type="button" aria-pressed={bookmarked} onClick={onToggleBookmark}>
             {bookmarked ? t('knowledge.bookmarked') : t('knowledge.bookmark')}
           </button>
         </section>
       )}
-      <SummarySection title={t('knowledge.summary.findings')} items={document.findings} icon="finding" />
-      <SummarySection title={t('knowledge.summary.decisions')} items={document.decisions} icon="decision" />
-      <SummarySection title={t('knowledge.summary.actions')} items={document.actions} icon="action" />
-      <SummarySection title={t('knowledge.summary.risks')} items={document.risks} icon="risk" />
-      <SummarySection title={t('knowledge.summary.bookmarks')} items={bookmarkLabels} icon="bookmark" />
-      {document.findings.length === 0 && selected === undefined && (
-        <div className={css.empty}>{t('knowledge.summary.empty')}</div>
-      )}
+      {[
+        { title: t('knowledge.summary.findings'), cards: document.excerpts },
+        { title: t('knowledge.kind.artifact'), cards: artifacts },
+        { title: t('knowledge.summary.bookmarks'), cards: saved },
+      ].map(group => group.cards.length === 0 ? null : (
+        <section className={css.section} key={group.title}>
+          <h3>{group.title}</h3>
+          {group.cards.map(card => (
+            <div key={card.id}>
+              {card.kind === 'section' && <h4>{card.title}</h4>}
+              <p>{card.kind === 'answer' || card.kind === 'section' ? card.summary : card.title}</p>
+              <KnowledgeActions card={card} openSource={openSource} inspectTool={inspectTool} readCard={readCard} t={t} />
+            </div>
+          ))}
+        </section>
+      ))}
     </div>
   )
 }

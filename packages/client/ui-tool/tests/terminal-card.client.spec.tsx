@@ -514,6 +514,7 @@ describe('DetailsPanel Output section', () => {
     const attention = createSnapshotStore(new Map())
     return render(
       <DetailsPanel
+        producedFiles={() => []}
         renderSlot={renderToolDetails(t)}
         SessionProvider={({ children }) => children}
         sessionId={SID}
@@ -681,13 +682,13 @@ describe('DetailsPanel Output section', () => {
 
   it('no selection at all renders the guidance line and the default title', () => {
     const view = mount(snapshot(), null)
-    expect(view.getByText('详情')).toBeTruthy()
-    expect(view.getByText('点击消息流中的工具行查看详情')).toBeTruthy()
+    expect(view.getByText('来源概览')).toBeTruthy()
+    expect(view.getByText('尚无可摘录的已完成回答。请查看原始对话中的进度、产物或错误。')).toBeTruthy()
   })
 
   it('a step selection without a callId renders the guidance line too', () => {
     const view = mount(snapshot(), { turnSeq: 3, stepSeq: 1 })
-    expect(view.getByText('点击消息流中的工具行查看详情')).toBeTruthy()
+    expect(view.getByText('尚无可摘录的已完成回答。请查看原始对话中的进度、产物或错误。')).toBeTruthy()
   })
 
   it('the close button reaches closeDetails', () => {
@@ -701,6 +702,7 @@ describe('DetailsPanel Output section', () => {
     const attention = createSnapshotStore(new Map())
     const view = render(
       <DetailsPanel
+        producedFiles={() => []}
         renderSlot={renderToolDetails(t)}
         SessionProvider={({ children }) => children}
         sessionId={SID}

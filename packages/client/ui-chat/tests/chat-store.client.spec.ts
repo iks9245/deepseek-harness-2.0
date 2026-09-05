@@ -9,7 +9,8 @@ describe('createChatStore', () => {
     expect(store.store.getSnapshot()).toEqual({
       selection: null,
       turnProcesses: [],
-      knowledgeMode: 'map',
+      knowledgeMode: 'auto',
+      knowledgeSource: null,
       selectedKnowledgeId: null,
       knowledgeBookmarks: [],
       expandedKnowledgeCards: [],
@@ -70,7 +71,8 @@ describe('createChatStore', () => {
       knowledgeBookmarks: ['turn:1:answer'],
     })
     expect(handle.create('s2').store.getSnapshot()).toMatchObject({
-      knowledgeMode: 'map',
+      knowledgeMode: 'auto',
+      knowledgeSource: null,
       knowledgeBookmarks: [],
     })
   })

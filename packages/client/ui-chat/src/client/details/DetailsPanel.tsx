@@ -48,14 +48,16 @@ function rawResultText(block: ToolCallBlock): string {
 }
 
 export function DetailsPanel({
-  useChat, useSessions, useProjection, sessionId, useStore, actions, renderSlot, closeDetails, t,
+  useChat, useSession, useSessions, useProjection, sessionId, useStore, actions, renderSlot, closeDetails, producedFiles, t,
 }: DetailsPanelProps) {
   const selection = useStore(s => s.selection)
   const selectedKnowledgeId = useStore(s => s.selectedKnowledgeId)
   const bookmarks = useStore(s => s.knowledgeBookmarks)
   const nodeValues = useChat(s => s.nodes.values())
   const outline = useProjection('turnOutline')
-  const document = deriveKnowledgeDocument(outline, nodeValues)
+  const timeline = useChat(s => s.timeline)
+  const hasMore = useSession(s => s.hasMore)
+  const document = deriveKnowledgeDocument(outline, nodeValues, timeline, producedFiles, hasMore)
   const selectedKnowledge = document.cards.find(card => card.id === selectedKnowledgeId)
   // Session workspace root: a card model resolves omitted or relative
   // tool paths against it without reading Session services.
@@ -88,6 +90,13 @@ export function DetailsPanel({
               bookmarks={bookmarks}
               onToggleBookmark={() => {
                 if (selectedKnowledgeId !== null) actions.toggleKnowledgeBookmark(selectedKnowledgeId)
+              }}
+              openSource={actions.requestKnowledgeSource}
+              readCard={actions.readKnowledgeCard}
+              inspectTool={(card) => {
+                if (card.tool !== undefined && card.source !== undefined) {
+                  actions.select({ turnSeq: card.source.turnSeq, callId: card.tool.callId, toolName: card.tool.name })
+                }
               }}
               t={t}
             />

@@ -83,6 +83,7 @@ export function apply(ctx: ClientContext): void {
   // via ctx.get, so its absence — this plugin composed out — is the off state.
   const t = ctx.locale.bind(NS)
   const mentions: ChatFileMentions = {
+    producedForTurn: turn => turn.data.get('deliverables')?.produced ?? [],
     forClosing(owner) {
       // Same claim test the turn-tail chain entry runs: no produced files,
       // no vocabulary — the two surfaces agree by construction.

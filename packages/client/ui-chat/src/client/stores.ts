@@ -1,11 +1,13 @@
 /** Per-Session Chat selection store shared by the transcript and details panel. */
 import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
-import type { ChatStoreState, SelectionTarget, TurnProcessViewEntry } from './contract/store.ts'
+import type { ChatSourceTarget, ChatStoreState, SelectionTarget, TurnProcessViewEntry } from './contract/store.ts'
 
 type ChatActions = {
   select: (draft: ChatStoreState, target: SelectionTarget | null) => void
   setKnowledgeMode: (draft: ChatStoreState, mode: ChatStoreState['knowledgeMode']) => void
   selectKnowledge: (draft: ChatStoreState, id: string | null) => void
+  readKnowledgeCard: (draft: ChatStoreState, id: string) => void
+  requestKnowledgeSource: (draft: ChatStoreState, source: ChatSourceTarget | null) => void
   toggleKnowledgeBookmark: (draft: ChatStoreState, id: string) => void
   toggleKnowledgeCard: (draft: ChatStoreState, id: string) => void
   setTurnProcessOpen: (
@@ -39,7 +41,8 @@ export function createChatStore(): EngineStoreHandle<ChatStoreState, ChatActions
     init: (): ChatStoreState => ({
       selection: null,
       turnProcesses: [],
-      knowledgeMode: 'map',
+      knowledgeMode: 'auto',
+      knowledgeSource: null,
       selectedKnowledgeId: null,
       knowledgeBookmarks: [],
       expandedKnowledgeCards: [],
@@ -48,6 +51,15 @@ export function createChatStore(): EngineStoreHandle<ChatStoreState, ChatActions
       select: (draft, target: SelectionTarget | null) => { draft.selection = target },
       setKnowledgeMode: (draft, mode) => { draft.knowledgeMode = mode },
       selectKnowledge: (draft, id) => { draft.selectedKnowledgeId = id },
+      readKnowledgeCard: (draft, id) => {
+        draft.knowledgeMode = 'reading'
+        draft.selectedKnowledgeId = id
+        if (!draft.expandedKnowledgeCards.includes(id)) draft.expandedKnowledgeCards.push(id)
+      },
+      requestKnowledgeSource: (draft, source) => {
+        draft.knowledgeSource = source
+        if (source !== null) draft.knowledgeMode = 'transcript'
+      },
       toggleKnowledgeBookmark: (draft, id) => {
         const index = draft.knowledgeBookmarks.indexOf(id)
         if (index < 0) draft.knowledgeBookmarks.push(id)

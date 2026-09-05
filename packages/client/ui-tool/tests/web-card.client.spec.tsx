@@ -230,6 +230,7 @@ describe('DetailsPanel web Output section', () => {
     const attention = createSnapshotStore(new Map())
     return render(
       <DetailsPanel
+        producedFiles={() => []}
         renderSlot={renderToolDetails(t)}
         SessionProvider={({ children }) => children}
         sessionId={SID}
