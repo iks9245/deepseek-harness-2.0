@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/proposed/architecture/2026-09-05-knowledge-workspace-presentation.md
-2026-09-05-knowledge-workspace-presentation.md: 0b678dd61fc0361728a52c7d4620fb00e540ea3e
-2026-09-05-knowledge-workspace-presentation.zh.md: 6f56229b1569371d56f9500a3ac5fe6eb4b03987
+2026-09-05-knowledge-workspace-presentation.md: 61a4adb44b420146b42b346cea8509df48c48dbc
+2026-09-05-knowledge-workspace-presentation.zh.md: 2991686366ff383351ae42387dbff57efcbe479f

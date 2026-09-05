@@ -123,6 +123,7 @@ export function apply(ctx: Context): void {
             ctx.layout.openDetails()
           },
           fileMentions: (owner: TurnTailOwnerProps) => ctx.get('chatFileMentions')?.forClosing(owner),
+          producedFiles: turn => ctx.get('chatFileMentions')?.producedForTurn(turn) ?? [],
           openFile: async (path) => {
             const cwd = ctx.sessions.list.getSnapshot().byId[sessionId]?.cwd
             const result = await ctx.remote.session.openWorkspacePath({
@@ -169,6 +170,9 @@ export function apply(ctx: Context): void {
     locale: NS,
     children: { 'conversation.details.tool': { kind: 'single', scope: 'session' } },
     store: chatStore,
-    inject: (): DetailsInjected => ({ closeDetails: () => { ctx.layout.closeDetails() } }),
+    inject: (): DetailsInjected => ({
+      closeDetails: () => { ctx.layout.closeDetails() },
+      producedFiles: turn => ctx.get('chatFileMentions')?.producedForTurn(turn) ?? [],
+    }),
   }, DetailsPanel))
 }

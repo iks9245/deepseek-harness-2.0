@@ -9,6 +9,11 @@
   - tablist:
     - tab "Chat" [selected]
     - tab "Trajectory"
+- region "Task status":
+  - paragraph:
+    - text: Turn 1 · Completed
+    - button "View original conversation"
+- button "Return to knowledge map"
 - button "System prompt":
   - img
   - img

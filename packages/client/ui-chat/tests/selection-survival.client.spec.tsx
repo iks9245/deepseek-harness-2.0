@@ -76,7 +76,8 @@ describe('Chat selection survives on its store seat', () => {
     expect(reborn.store.getSnapshot()).toEqual({
       selection: null,
       turnProcesses: [],
-      knowledgeMode: 'map',
+      knowledgeMode: 'auto',
+      knowledgeSource: null,
       selectedKnowledgeId: null,
       knowledgeBookmarks: [],
       expandedKnowledgeCards: [],

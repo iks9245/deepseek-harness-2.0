@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
@@ -14,6 +14,7 @@ import {
   captureStableAria,
   compareOrRefreshGolden,
   launchWebScaffold,
+  parseSeedFixture, renderSeedFixture, seedSession,
   watchConsole,
   webSnapshotMode,
   type WebScaffold,
@@ -23,8 +24,36 @@ import { newEnglishPage, saveFailureShot } from './support.ts'
 const SNAPSHOT_DIR = fileURLToPath(new URL('../../../snapshots/web/minimal-preset', import.meta.url))
 const FIXTURE = join(SNAPSHOT_DIR, 'session.v2.jsonl')
 const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
+const KNOWLEDGE_EXPECTED = join(SNAPSHOT_DIR, 'knowledge.expected.md')
 const MODE = webSnapshotMode()
 const PROMPT = "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop."
+
+const CHAPTER = '## Attention\n\nAttention evidence stays with its original section.'
+
+async function seedChapterFixture(scaffold: WebScaffold): Promise<void> {
+  const text = `# Report\n\n## 記憶 Memory\n\nMemory evidence.\n\n${CHAPTER}`
+  const decoded = parseSeedFixture(await readFile(FIXTURE, 'utf8'))
+  const events = decoded.events.map((event) => {
+    if (event.type === 'session/title') return { ...event, data: { ...event.data, title: 'Knowledge sections fixture' } }
+    if (event.type === 'user/message' && event.data.source.kind === 'user') {
+      return { ...event, data: { ...event.data, content: [{ type: 'text' as const, text: 'KNOWLEDGE_SECTIONS_REQUEST' }] } }
+    }
+    if (event.type === 'assistant/message' && event.data.step === 2) {
+      return { ...event, data: { ...event.data, stream: [], message: { ...event.data.message, content: [{ type: 'text' as const, text }] } } }
+    }
+    return event
+  })
+  await seedSession(scaffold, renderSeedFixture(decoded.headerLine, events), 'knowledge-sections-fixture')
+}
+
+async function openChapters(page: Page): Promise<void> {
+  const searchButton = page.getByRole('button', { name: 'Search sessions', exact: true })
+  if (await searchButton.getAttribute('aria-expanded') !== 'true') await searchButton.click()
+  await page.getByRole('textbox', { name: 'Search sessions...', exact: true }).fill('KNOWLEDGE_SECTIONS_REQUEST')
+  const results = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
+  await expect.poll(() => results.count()).toBe(1)
+  await results.click()
+}
 
 describe('minimal agent preset', () => {
   let scaffold: WebScaffold
@@ -52,6 +81,7 @@ describe('minimal agent preset', () => {
       source: { kind: 'user' },
     }))
     await agentHandle.agent.whenIdle()
+    if (MODE !== 'record') await seedChapterFixture(scaffold)
   })
 
   afterAll(async () => {
@@ -141,7 +171,7 @@ describe('minimal agent preset', () => {
   it.skipIf(MODE === 'record')('expands the completed persistent Bash call in the Web conversation', async () => {
     onTestFailed(() => { if (page !== undefined) void saveFailureShot(page, 'web-minimal-persistent-bash-card') })
     browser = await chromium.launch()
-    page = await newEnglishPage(browser)
+    page = await newEnglishPage(browser, 1000, 'product-default')
     tripwire = watchConsole(page)
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
@@ -149,10 +179,17 @@ describe('minimal agent preset', () => {
     const groupRow = page.locator('[role="treeitem"]').first()
     await groupRow.waitFor({ timeout: 15_000 })
     await groupRow.click()
-    const sessionRow = page.locator('[role="treeitem"]').nth(1)
+    const sessionRow = page.getByRole('treeitem').filter({ hasText: 'Use the bash tool to' })
     await sessionRow.waitFor({ timeout: 10_000 })
     await sessionRow.click()
-    await page.getByText('MINIMAL_PRESET_REQUEST_OK', { exact: true }).waitFor({ timeout: 15_000 })
+    const center = page.locator('[class*="centerCol"]')
+    await center.getByRole('tab', { name: 'Map', exact: true }).waitFor({ timeout: 15_000 })
+    await compareOrRefreshGolden(KNOWLEDGE_EXPECTED,
+      await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd), MODE)
+    await center.getByRole('button', { name: /^Answer MINIMAL_PRESET_REQUEST_OK/ }).click()
+    const overview = page.locator('section').filter({ has: page.getByRole('heading', { name: 'MINIMAL_PRESET_REQUEST_OK', exact: true }) })
+    await overview.getByRole('button', { name: 'View original conversation' }).click()
+    await center.getByText('MINIMAL_PRESET_REQUEST_OK', { exact: true }).waitFor({ timeout: 15_000 })
 
     const process = page.locator('[data-turn-process]')
     await process.waitFor({ timeout: 15_000 })
@@ -174,9 +211,42 @@ describe('minimal agent preset', () => {
 
     const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
+
+    await process.click()
+    await center.getByRole('button', { name: 'Return to knowledge map' }).click()
+    await center.getByRole('tab', { name: 'Reading', exact: true }).click()
+    const toolCard = center.locator('article').filter({ has: page.getByRole('button', { name: /Tool activity bash/ }) })
+    await toolCard.getByRole('button', { name: 'View tool record' }).click()
+    await page.getByRole('heading', { name: 'bash', exact: true }).waitFor()
+    await toolCard.getByRole('button', { name: 'View original conversation' }).click()
+    await expect.poll(() => process.getAttribute('aria-expanded')).toBe('true')
+    await expect.poll(() => row.isVisible()).toBe(true)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   }, 60_000)
+
+  it.skipIf(MODE === 'record')('opens an exact chapter excerpt and reconstructs its identity after reopening', async () => {
+    if (page === undefined) throw new Error('the conversation browser must be initialized')
+    await openChapters(page)
+    const center = page.locator('[class*="centerCol"]')
+    const section = page.getByRole('heading', { name: 'Attention', exact: true, level: 4 }).locator('..')
+    await section.getByRole('button', { name: 'Read section' }).press('Enter')
+    const selected = center.locator('article[aria-current="true"]')
+    await selected.getByRole('button', { name: 'Section Attention', exact: true }).waitFor()
+    expect(await selected.getByRole('button', { name: 'Section Attention', exact: true }).getAttribute('aria-expanded')).toBe('true')
+    await selected.getByText(CHAPTER, { exact: true }).waitFor()
+    const id = await selected.getAttribute('data-knowledge-card')
+    await compareOrRefreshGolden(join(SNAPSHOT_DIR, 'sections.expected.md'),
+      await captureStableAria(page, 'article[aria-current="true"]', scaffold.workspaceCwd), MODE)
+    await selected.getByRole('button', { name: 'View original conversation' }).click()
+    await center.getByRole('heading', { name: 'Attention', exact: true }).waitFor()
+    await page.reload({ waitUntil: 'load' })
+    await openChapters(page)
+    await center.getByRole('button', { name: 'Return to knowledge map' }).click()
+    await section.getByRole('button', { name: 'Read section' }).click()
+    await expect.poll(() => selected.getAttribute('data-knowledge-card')).toBe(id)
+    expect(tripwire?.pageErrors).toEqual([])
+  })
 
   it('keeps its snapshot inventory closed', async () => {
     await assertFixtureInventory(SNAPSHOT_DIR, [
@@ -184,6 +254,8 @@ describe('minimal agent preset', () => {
       'system-prompt.expected.md',
       'tool-schemas.expected.json',
       'ui.expected.md',
+      'knowledge.expected.md',
+      'sections.expected.md',
     ])
   })
 })

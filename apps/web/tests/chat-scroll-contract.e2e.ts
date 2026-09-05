@@ -284,7 +284,7 @@ async function openSeed(page: Page, fixture: ChatScrollFixture, tailMarker?: str
   await results.click()
   await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 30_000 })
   if (tailMarker !== undefined) {
-    await page.getByText(tailMarker, { exact: false }).last().waitFor({ timeout: 30_000 })
+    await page.locator('[class*="centerCol"]').getByText(tailMarker, { exact: false }).last().waitFor({ timeout: 30_000 })
   }
   await nextPaint(page)
 }
@@ -420,7 +420,7 @@ async function expectBottom(page: Page): Promise<void> {
 }
 
 async function expectMarkerAboveComposer(page: Page, marker: string): Promise<void> {
-  const geometry = await page.getByText(marker, { exact: false }).last().evaluate((node) => {
+  const geometry = await page.locator('[class*="centerCol"]').getByText(marker, { exact: false }).last().evaluate((node) => {
     const row = node.closest('[data-chat-flow-key], [data-streaming]')
     const composer = node.closest('[data-conversation-scroll]')?.querySelector('[data-composer-seat]')
     if (!(row instanceof HTMLElement) || !(composer instanceof HTMLElement)) {
@@ -518,7 +518,7 @@ describe('web e2e: long Chat scroll contract', () => {
         const composer = world.page.locator('[data-composer-input][contenteditable="true"]').last()
         await composer.fill(LIVE_TEXT_PROMPT)
         await world.page.getByRole('button', { name: 'Send message', exact: true }).click()
-        await world.page.getByText(LIVE_TEXT_FIRST, { exact: false }).last().waitFor({ timeout: 15_000 })
+        await world.page.locator('[class*="centerCol"]').getByText(LIVE_TEXT_FIRST, { exact: false }).last().waitFor({ timeout: 15_000 })
         await wheelToHistoryStart(world.page)
         const beforeRows = await loadedFlowRows(world.page)
         await world.page.getByRole('button', { name: 'Load earlier', exact: true }).click()
@@ -542,7 +542,7 @@ describe('web e2e: long Chat scroll contract', () => {
 
       await settled
       await expect.poll(() => world.page.locator('[data-streaming="true"]').count(), { timeout: 15_000 }).toBe(0)
-      await world.page.getByText(LIVE_TEXT_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
+      await world.page.locator('[class*="centerCol"]').getByText(LIVE_TEXT_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
       await world.page.unroute('**/api/session/page')
 
       let additionalPages = 0
@@ -693,7 +693,7 @@ describe('web e2e: long Chat scroll contract', () => {
       await settled
       expect(world.events.some(event => eventCarries(event, LIVE_TOOL_FIRST))).toBe(true)
       await expect.poll(() => world.page.locator('[data-streaming="true"]').count(), { timeout: 15_000 }).toBe(0)
-      await world.page.getByText(LIVE_TOOL_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
+      await world.page.locator('[class*="centerCol"]').getByText(LIVE_TOOL_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
       await expectBottom(world.page)
       await expectMarkerAboveComposer(world.page, LIVE_TOOL_DONE)
 
@@ -929,7 +929,7 @@ describe('web e2e: long Chat scroll contract', () => {
 
       await settled
       await expect.poll(() => world.page.locator('[data-streaming="true"]').count(), { timeout: 15_000 }).toBe(0)
-      await world.page.getByText(LIVE_FLING_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
+      await world.page.locator('[class*="centerCol"]').getByText(LIVE_FLING_DONE, { exact: false }).last().waitFor({ timeout: 15_000 })
       await expectBottom(world.page)
       assertClean(world)
     })

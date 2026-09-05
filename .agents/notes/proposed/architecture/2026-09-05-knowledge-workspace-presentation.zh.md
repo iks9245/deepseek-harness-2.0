@@ -12,6 +12,8 @@ Web 客户端为每个会话提供一个线性的聊天视图。`ChatSnapshot` �
 
 ## Proposal
 
+已加载窗口的实现遵循[来源决策](../../implemented/architecture/2026-09-05-knowledge-source-provenance.zh.md)。下述全历史投影和结构化摘要仍属于提案。
+
 Web 客户端新增知识工作区 Conversation View。它把会话投影为一个 `KnowledgeDocument`，其章节、卡片、关系、摘要、行动、风险和引用都具有稳定的不透明标识符。
 
 呈现层在三个协同区域消费该模型：`sidebar.knowledge` 导航器列出可展开的章节树并跳转到卡片标识符；中央栏以摘要优先的卡片和细节展开来呈现内容及阅读进度；通用详情宿主呈现执行摘要、所选卡片上下文和已保存书签。现有工具检查器成为一个详情宿主贡献者，而不再独占整个右栏，同时仍由[客户端工具呈现权责](../../implemented/architecture/2026-08-08-client-tool-presentation-ownership.zh.md)负责工具专属呈现。
