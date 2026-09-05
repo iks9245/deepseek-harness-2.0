@@ -1,10 +1,19 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createChatStore } from '../src/client/stores.ts'
+
+afterEach(() => { vi.unstubAllGlobals() })
 
 describe('createChatStore', () => {
   it('starts without a selected Chat target', () => {
     const store = createChatStore().create()
-    expect(store.store.getSnapshot()).toEqual({ selection: null, turnProcesses: [] })
+    expect(store.store.getSnapshot()).toEqual({
+      selection: null,
+      turnProcesses: [],
+      knowledgeMode: 'map',
+      selectedKnowledgeId: null,
+      knowledgeBookmarks: [],
+      expandedKnowledgeCards: [],
+    })
   })
 
   it('selects and clears one Chat details target', () => {
@@ -22,6 +31,48 @@ describe('createChatStore', () => {
     const second = handle.create()
     first.actions.select({ turnSeq: 1 })
     expect(second.store.getSnapshot().selection).toBeNull()
+  })
+
+  it('owns map, reading-card, selection, and bookmark state per Session', () => {
+    const instance = createChatStore().create()
+    instance.actions.setKnowledgeMode('reading')
+    instance.actions.selectKnowledge('turn:1:answer')
+    instance.actions.toggleKnowledgeBookmark('turn:1:answer')
+    instance.actions.toggleKnowledgeCard('turn:1:answer')
+
+    expect(instance.store.getSnapshot()).toMatchObject({
+      knowledgeMode: 'reading',
+      selectedKnowledgeId: 'turn:1:answer',
+      knowledgeBookmarks: ['turn:1:answer'],
+      expandedKnowledgeCards: ['turn:1:answer'],
+    })
+
+    instance.actions.toggleKnowledgeBookmark('turn:1:answer')
+    instance.actions.toggleKnowledgeCard('turn:1:answer')
+    expect(instance.store.getSnapshot().knowledgeBookmarks).toEqual([])
+    expect(instance.store.getSnapshot().expandedKnowledgeCards).toEqual([])
+  })
+
+  it('restores Knowledge Workspace state only for the addressed Session', () => {
+    const backing = new Map<string, string>()
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => backing.get(key) ?? null,
+      setItem: (key: string, value: string) => { backing.set(key, value) },
+      removeItem: (key: string) => { backing.delete(key) },
+    })
+    const handle = createChatStore()
+    const first = handle.create('s1')
+    first.actions.setKnowledgeMode('reading')
+    first.actions.toggleKnowledgeBookmark('turn:1:answer')
+
+    expect(handle.create('s1').store.getSnapshot()).toMatchObject({
+      knowledgeMode: 'reading',
+      knowledgeBookmarks: ['turn:1:answer'],
+    })
+    expect(handle.create('s2').store.getSnapshot()).toMatchObject({
+      knowledgeMode: 'map',
+      knowledgeBookmarks: [],
+    })
   })
 
   it('stores only manually expanded Turn-process answers', () => {

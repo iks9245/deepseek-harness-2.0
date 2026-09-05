@@ -14,6 +14,8 @@ import { ChatNodeSeat } from './ChatNodeSeat.tsx'
 import { TurnNavigator } from './TurnNavigator.tsx'
 import { mergeTurnRailItems, type TurnRailItem } from './turn-rail-items.ts'
 import { formatRunDuration } from './message-chrome.ts'
+import { deriveKnowledgeDocument } from '../knowledge/model.ts'
+import { KnowledgeWorkspace } from '../knowledge/KnowledgeWorkspace.tsx'
 import css from './ChatView.module.css'
 
 const FOLLOW_THRESHOLD = 24
@@ -217,10 +219,12 @@ const ChatNodeList = memo(function ChatNodeList({ order, ...seatProps }: ChatNod
 export function ChatView({
   useSession, useChat, useChatNode, useChatNodeProcess, useSessions, useStore, actions, renderSlot,
   sessionId, openFile, loadOlder, loadThrough, loadImage, openView, chatScroll, forkAt, fileMentions,
+  openKnowledgeSummary,
   useTranscriptView, useProjection, t,
 }: ChatViewSlotProps) {
   const order = useChat(s => s.order)
   const nodeStore = useChat(s => s.nodes)
+  const nodeValues = useChat(s => s.nodes.values())
   // The rail's items are accumulated in the Chat snapshot, so this selector is
   // both the data and its change signal: the array identity moves only when a
   // Turn enters, leaves, or changes its preview.
@@ -228,6 +232,10 @@ export function ChatView({
   // Host-computed whole-log outline; the merge is view-layer only (the
   // conversation snapshot never carries projection values).
   const turnOutline = useProjection('turnOutline')
+  const knowledgeDocument = useMemo(
+    () => deriveKnowledgeDocument(turnOutline, nodeValues),
+    [nodeValues, turnOutline],
+  )
   const railItems = useMemo(
     () => mergeTurnRailItems(turnNavigationItems, turnOutline),
     [turnNavigationItems, turnOutline],
@@ -242,7 +250,12 @@ export function ChatView({
   const hasMore = useSession(s => s.hasMore)
   const loadingOlder = useSession(s => s.loadingOlder)
   const selectedCallId = useStore(s => s.selection?.callId)
+  const knowledgeMode = useStore(s => s.knowledgeMode)
+  const selectedKnowledgeId = useStore(s => s.selectedKnowledgeId)
+  const knowledgeBookmarks = useStore(s => s.knowledgeBookmarks)
+  const expandedKnowledgeCards = useStore(s => s.expandedKnowledgeCards)
   const compactTranscript = useTranscriptView(mode => mode === 'compact')
+  useEffect(() => { openKnowledgeSummary() }, [openKnowledgeSummary])
   const inspectCall = useCallback((callId: string) => {
     openView('trajectory', callId)
   }, [openView])
@@ -752,7 +765,33 @@ export function ChatView({
 
   return (
     <div className={css.root}>
-      <div ref={listRef} className={css.scroll}>
+      {knowledgeMode === 'map' || knowledgeMode === 'reading'
+        ? (
+          <KnowledgeWorkspace
+            document={knowledgeDocument}
+            mode={knowledgeMode}
+            selectedId={selectedKnowledgeId}
+            bookmarks={knowledgeBookmarks}
+            expandedCards={expandedKnowledgeCards}
+            setMode={actions.setKnowledgeMode}
+            openTranscript={() => { actions.setKnowledgeMode('transcript') }}
+            select={actions.selectKnowledge}
+            toggleBookmark={actions.toggleKnowledgeBookmark}
+            toggleCard={actions.toggleKnowledgeCard}
+            t={t}
+          />
+        )
+        : null}
+      {knowledgeMode === 'transcript' && (
+        <button
+          type="button"
+          className={css.returnToMap}
+          onClick={() => { actions.setKnowledgeMode('map') }}
+        >
+          {t('knowledge.returnToMap')}
+        </button>
+      )}
+      <div ref={listRef} className={css.scroll} hidden={knowledgeMode !== 'transcript'}>
         <TurnNavigator
           items={railItems}
           activeTurn={activeTurn}

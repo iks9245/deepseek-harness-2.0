@@ -261,6 +261,7 @@ function makeHarness(
   const forkAt = vi.fn()
   // Rows and the harness must observe the same chat-store instance.
   const chat = createChatStore().create()
+  chat.actions.setKnowledgeMode('transcript')
   const transcriptView = createSnapshotStore<TranscriptViewMode>('compact')
   const t = makeTranslate(zh, commonZh)
   const toolOwners: Array<{
@@ -393,6 +394,7 @@ function makeHarness(
     openView,
     completeViewRequest: () => {},
     openDetails,
+    openKnowledgeSummary: vi.fn(),
     openFile,
     loadOlder,
     loadThrough,
@@ -2718,7 +2720,7 @@ describe('ChatView', () => {
     })
     const noHistoryView = render(<noHistory.ChatView {...noHistory.props} />)
     expect(noHistoryView.getByText('No compactable history yet.')).toBeTruthy()
-    expect(noHistoryView.queryByRole('button')).toBeNull()
+    expect(noHistoryView.queryByRole('button', { name: /compact/ })).toBeNull()
 
     const failed = makeHarness({
       nodes: [command({

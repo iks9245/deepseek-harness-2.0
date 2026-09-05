@@ -8,17 +8,27 @@ kind: "package-reference"
 
 ## 概述
 
-Conversation 组装的浏览器 Chat target。本包注册 Chat event definition 与 snapshot 构造、提供 `useChat`、渲染 transcript node 和详情，并拥有 Chat 专属 store、action、本地化与滚动位置恢复；历史图片 URL 通过 Conversation 持有的按会话缓存（`ctx.uiConversation.imageUrl`）解析。其中 Assistant 与 Turn Tail definition 会直接 fold packed Assistant 历史 run，不展开其成员。steering 分类通过持久 splice state 只保留 next-step Inbox ID；next-turn splice 不创建 Chat Context。本地提交回显（`SessionSnapshot.pendingSubmissions`）保留提交开始时选定的区域：transcript 回显位于消息流末尾，steering 回显带 pending-steering 标记，queued 回显不进入 Chat。一旦 user/steering 节点或 queue occurrence 携带回显的 prompt `rpcId`，该回显即在同一渲染中隐藏，因此交接是原子的。
+Conversation 组装的浏览器 Chat target。本包注册 Chat event definition 与 snapshot 构造、提供 `useChat`、呈现以地图为默认入口的知识工作区、渲染 transcript node 和详情，并拥有 Chat 专属 store、action、本地化与滚动位置恢复；历史图片 URL 通过 Conversation 持有的按会话缓存（`ctx.uiConversation.imageUrl`）解析。其中 Assistant 与 Turn Tail definition 会直接 fold packed Assistant 历史 run，不展开其成员。steering 分类通过持久 splice state 只保留 next-step Inbox ID；next-turn splice 不创建 Chat Context。本地提交回显（`SessionSnapshot.pendingSubmissions`）保留提交开始时选定的区域：transcript 回显位于消息流末尾，steering 回显带 pending-steering 标记，queued 回显不进入 Chat。一旦 user/steering 节点或 queue occurrence 携带回显的 prompt `rpcId`，该回显即在同一渲染中隐藏，因此交接是原子的。
 
 ## 目录
 
 - [系统提示词行](#system-prompt-row)
+- [知识工作区](#knowledge-workspace)
 - [轮次 token 用量](#turn-token-usage)
 - [轮次过程折叠](#turn-process-folding)
 - [滚动归属](#scroll-ownership)
 - [模型体验](#model-experience)
 - [已知限制与暂缓事项](#known-limitations-and-deferred-work)
 - [开发备注](#dev-note)
+
+-----
+
+<a id="knowledge-workspace"></a>
+## 知识工作区
+
+非空 Session 默认打开由宿主 `turnOutline` 投影和已加载窗口内完整 Assistant、Tool 节点共同派生的对话图谱。稳定卡片标识符贯通知识图谱、卡片阅读器和右栏执行摘要中的主题、问题、答案与工具证据节点。执行摘要无需发起额外模型请求即可提取精简发现，并检测显式的决策、行动与风险行。选择图谱节点会在摘要中聚焦同一卡片；阅读模式提供摘要优先的卡片，其详情展开状态与书签保存在 Session 作用域浏览器 store 中。原始对话模式保留现有分页、工具与消息操作组成的完整时间线证据。
+
+首个交付切片刻意复用现有宿主大纲与已加载 Chat 模型。全量历史卡片详情和专用的持久 `KnowledgeDocument` 投影仍由知识工作区架构说明追踪；UI 不会为已加载窗口之外的材料虚构详情。
 
 -----
 

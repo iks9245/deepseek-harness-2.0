@@ -4,6 +4,10 @@ import type { ChatStoreState, SelectionTarget, TurnProcessViewEntry } from './co
 
 type ChatActions = {
   select: (draft: ChatStoreState, target: SelectionTarget | null) => void
+  setKnowledgeMode: (draft: ChatStoreState, mode: ChatStoreState['knowledgeMode']) => void
+  selectKnowledge: (draft: ChatStoreState, id: string | null) => void
+  toggleKnowledgeBookmark: (draft: ChatStoreState, id: string) => void
+  toggleKnowledgeCard: (draft: ChatStoreState, id: string) => void
   setTurnProcessOpen: (
     draft: ChatStoreState,
     turn: number,
@@ -31,9 +35,29 @@ export function storedTurnProcessEntry(
  */
 export function createChatStore(): EngineStoreHandle<ChatStoreState, ChatActions> {
   return defineStore({
-    init: (): ChatStoreState => ({ selection: null, turnProcesses: [] }),
+    persist: 'dsh.chat.v1',
+    init: (): ChatStoreState => ({
+      selection: null,
+      turnProcesses: [],
+      knowledgeMode: 'map',
+      selectedKnowledgeId: null,
+      knowledgeBookmarks: [],
+      expandedKnowledgeCards: [],
+    }),
     actions: {
       select: (draft, target: SelectionTarget | null) => { draft.selection = target },
+      setKnowledgeMode: (draft, mode) => { draft.knowledgeMode = mode },
+      selectKnowledge: (draft, id) => { draft.selectedKnowledgeId = id },
+      toggleKnowledgeBookmark: (draft, id) => {
+        const index = draft.knowledgeBookmarks.indexOf(id)
+        if (index < 0) draft.knowledgeBookmarks.push(id)
+        else draft.knowledgeBookmarks.splice(index, 1)
+      },
+      toggleKnowledgeCard: (draft, id) => {
+        const index = draft.expandedKnowledgeCards.indexOf(id)
+        if (index < 0) draft.expandedKnowledgeCards.push(id)
+        else draft.expandedKnowledgeCards.splice(index, 1)
+      },
       setTurnProcessOpen: (draft, turn, answerStep, open) => {
         const index = draft.turnProcesses.findIndex(entry => entry.turn === turn)
         if (!open) {
