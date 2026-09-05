@@ -94,6 +94,9 @@
     },
     {
       "path": "../ui-workspace"
+    },
+    {
+      "path": "../../session/session-knowledge"
     }
   ]
 }

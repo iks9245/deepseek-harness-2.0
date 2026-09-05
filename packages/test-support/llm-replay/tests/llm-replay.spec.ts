@@ -986,6 +986,16 @@ describe('deriveReplayScript', () => {
     expect(deriveReplayScript(events)).toEqual([{ kind: 'chunks', chunks: errChunks }])
   })
 
+  it('replays an auxiliary knowledge output between conversational calls', () => {
+    const event: SessionEvent<'knowledge/document'> = { type: 'knowledge/document', seq: SessionSeq(2), time: 0,
+      data: { rawOutput: '{"title":"Research"}', document: { requestSeq: SessionSeq(1), throughSeq: SessionSeq(0),
+        model: { provider: 'mock', model: 'mock' }, sources: [], map: { title: 'Research', summary: '', nodes: [], relations: [] } } } }
+    expect(deriveReplayScript([streamEvent(1, 1, 1, TEXT_CHUNKS), event, streamEvent(3, 2, 1, TEXT_CHUNKS)]))
+      .toEqual([{ kind: 'chunks', chunks: TEXT_CHUNKS }, { kind: 'chunks', chunks: [
+        { type: 'text-delta', index: 0, text: event.data.rawOutput }, { type: 'finish', reason: { kind: 'stop' } },
+      ] }, { kind: 'chunks', chunks: TEXT_CHUNKS }])
+  })
+
   it('inserts compaction/summary output between the calls surrounding it', () => {
     const overflow: StreamChunk[] = [
       { type: 'finish', reason: { kind: 'error', failure: { message: 'too large', code: 'CONTEXT_WINDOW_EXCEEDED' } } },

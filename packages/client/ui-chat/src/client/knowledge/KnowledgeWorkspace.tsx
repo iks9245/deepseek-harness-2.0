@@ -5,6 +5,7 @@ import { KnowledgeStatusSummary } from './ExecutiveSummary.tsx'
 import { KnowledgeReader } from './KnowledgeReader.tsx'
 import { KnowledgeGraph } from './KnowledgeGraph.tsx'
 import { KnowledgeChanges } from './KnowledgeChanges.tsx'
+import { OrganizedKnowledge } from './OrganizedKnowledge.tsx'
 import type { KnowledgeWorkspaceProps } from './workspace-props.ts'
 import css from './KnowledgeWorkspace.module.css'
 
@@ -17,6 +18,23 @@ export function KnowledgeWorkspace(props: KnowledgeWorkspaceProps) {
   const { document, mode, setMode, openTranscript, readCard, t } = props
   const [query, setQuery] = useState('')
   const [turn, setTurn] = useState<number | null>(null)
+  const [sourceView, setSourceView] = useState(false)
+  const [organizing, setOrganizing] = useState(false)
+  const [organizeError, setOrganizeError] = useState<string | null>(null)
+  const organized = props.organization?.document
+  const showOrganized = mode === 'map' && organized != null && !sourceView
+  const organize = async (cancel = false): Promise<void> => {
+    if (!cancel) { setOrganizing(true); setOrganizeError(null) }
+    try {
+      const error = await props.organizeKnowledge(cancel)
+      setOrganizeError(error)
+      if (error === null && !cancel) { setSourceView(false); setMode('map') }
+    } catch (error) {
+      setOrganizeError(error instanceof Error ? error.message : String(error))
+    } finally {
+      if (!cancel) setOrganizing(false)
+    }
+  }
   const latest = document.turns.at(-1)
   const question = document.cards.find(card => card.kind === 'question' && card.turn === latest?.turn)
   const excerpts = document.excerpts.filter(card => card.turn === latest?.turn)
@@ -35,7 +53,22 @@ export function KnowledgeWorkspace(props: KnowledgeWorkspaceProps) {
           {openTranscript !== undefined && <button type="button" role="tab" aria-selected={false} onClick={openTranscript}>{t('knowledge.mode.transcript')}</button>}
         </div>
       </header>
-      {mode === 'map' && <div className={css.overview}>
+      <div className={css.organizeControls}>
+        <div>
+          <button type="button" disabled={organizing || props.running} onClick={() => { void organize() }}>
+            {t(organizing ? 'knowledge.organize.busy' : organized == null ? 'knowledge.organize.action' : 'knowledge.organize.again')}
+          </button>
+          {organizing && <button type="button" onClick={() => { void organize(true) }}>{t('knowledge.organize.cancel')}</button>}
+          {organized != null && <button type="button" aria-pressed={sourceView} onClick={() => { setSourceView(value => !value); setMode('map') }}>
+            {t(sourceView ? 'knowledge.organize.showOrganized' : 'knowledge.organize.showSources')}
+          </button>}
+        </div>
+        <p className={css.hint}>{t(props.running ? 'knowledge.organize.wait' : 'knowledge.organize.hint')}</p>
+        {props.organization?.stale === true && <p role="status">{t('knowledge.organize.stale')}</p>}
+        {organizeError !== null && <p role="alert">{organizeError}</p>}
+      </div>
+      {showOrganized && <OrganizedKnowledge key={organized.requestSeq} record={organized} openSource={props.openSource} t={t} />}
+      {mode === 'map' && !showOrganized && <div className={css.overview}>
         <section className={css.researchQuestion}>
           <h3>{t('knowledge.overview.question')}</h3>
           <p>{question?.details || document.title}</p>
@@ -64,7 +97,7 @@ export function KnowledgeWorkspace(props: KnowledgeWorkspaceProps) {
           </section>
         </div>
       </div>}
-      <div className={css.coverage}>
+      {!showOrganized && <><div className={css.coverage}>
         <span>{t('knowledge.coverage.count', { turns: document.turns.length, cards: document.cards.length })}</span>
         {document.incomplete && <><span>{t('knowledge.coverage.partial')}</span><button type="button" disabled={props.loadingHistory} onClick={props.loadHistory}>{t(props.loadingHistory ? 'loading' : 'knowledge.coverage.load')}</button></>}
       </div>
@@ -89,6 +122,7 @@ export function KnowledgeWorkspace(props: KnowledgeWorkspaceProps) {
         {mode === 'map' ? <KnowledgeGraph document={scoped} selectedId={props.selectedId} readCard={readCard} t={t} /> : <KnowledgeReader {...props} />}
       </div>
       <KnowledgeChanges {...props} />
+      </>}
     </section>
   )
 }

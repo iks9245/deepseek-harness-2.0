@@ -1355,7 +1355,7 @@ export interface ReplayModelConfig {
 
 依赖：[`ModelModality`](../packages/llm/llm/src/index.ts) · [`RetryPolicyConfig`](../packages/llm/llm/src/index.ts)
 
-来源：[`packages/test-support/llm-replay/src/index.ts:1294`](../packages/test-support/llm-replay/src/index.ts)
+来源：[`packages/test-support/llm-replay/src/index.ts:1303`](../packages/test-support/llm-replay/src/index.ts)
 
 <a id="deepseek-aidsh-llm-retry"></a>
 
@@ -1785,6 +1785,34 @@ export interface JsonRpcConfig {
 依赖：`Readable`（`node:stream`）· `Writable`（`node:stream`）
 
 来源：[`packages/sdk/server/src/index.ts:25`](../packages/sdk/server/src/index.ts)
+
+<a id="deepseek-aidsh-session-knowledge"></a>
+
+## `@deepseek-ai/dsh-session-knowledge`
+
+需要： `commands` · `llm` · `sessions` · `sessionProjections`
+
+```ts config-catalog
+/** Required deployment bounds; no model request occurs until an explicit command. */
+export interface Config {
+  /** UTF-8 ceiling for the complete logged model request. */
+  readonly maxInputBytes: number
+  /** UTF-8 ceiling for streamed text/reasoning and the complete saved result. */
+  readonly maxOutputBytes: number
+  /** Provider output-token limit for one organization. */
+  readonly maxOutputTokens: number
+  /** Maximum distinct subjects in an accepted map. */
+  readonly maxGroups: number
+  /** Maximum knowledge points in an accepted map. */
+  readonly maxNodes: number
+  /** Maximum proposed relationships; zero forbids relationships. */
+  readonly maxRelations: number
+  /** Cooperative request deadline in milliseconds. */
+  readonly timeoutMs: number
+}
+```
+
+来源： [`packages/session/session-knowledge/src/index.ts:15`](../packages/session/session-knowledge/src/index.ts)
 
 <a id="deepseek-aidsh-session-log-deepseek"></a>
 

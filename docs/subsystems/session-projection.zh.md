@@ -6,6 +6,8 @@
 
 源码：[`packages/session/session-projection/src/index.ts`](../../packages/session/session-projection/src/index.ts)
 
+[`knowledge` 贡献者](../../packages/session/session-knowledge/README.zh.md)投影已保存的 `KnowledgeDocumentRecord` 和过期标记。其[类型](../../packages/session/session-knowledge/src/types.ts)定义分组要点、建议关系、精确引用和持久回答及轮次目标；原始辅助输出保留在日志中。
+
 ## 投影单元
 
 `SessionProjectionStateMap` 是 host 侧折叠状态的 merge-extensible 类型表，`SessionProjectionMap` 则继续表示客户端可见的全量值。领域为每个状态 key 贡献一个 `ProjectionDefinition`；`wire` 块使该 key 对客户端可见，渲染归 slot 体系管，永远不归本层：

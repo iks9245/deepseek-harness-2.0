@@ -95,7 +95,7 @@ This section explains the design of the replay plugin; the observable behavior i
 
 ### Design
 
-Replay treats the selected projected Session generation as the fixture. One parser completes projected envelopes, validates and migrates the whole artifact through `sessionFormatCatalog`, and returns the current header, inherited cut, and event list as one result. `deriveReplayScript` expands each `assistant/message` or `assistant/attempt` stream in log order, so each durable settlement becomes one `chunks` entry; a non-empty stream without a `finish` chunk is the fingerprint of a thrown `stream()` and must be expressed through an override sidecar. A `compaction/summary` carrying `llmStreamCall: true` and a complete `rawOutput` replays as one canonical successful stream at that event's position. Scripted strings may embed `{{fromRequest:<regex>}}`; at stream time each placeholder resolves against the live request's string leaves, taking the pattern's last match and its first capture group (or the whole match) in place.
+Replay treats the selected projected Session generation as the fixture. One parser completes projected envelopes, validates and migrates the whole artifact through `sessionFormatCatalog`, and returns the current header, inherited cut, and event list as one result. `deriveReplayScript` expands each `assistant/message` or `assistant/attempt` stream in log order, so each durable settlement becomes one `chunks` entry; a non-empty stream without a `finish` chunk is the fingerprint of a thrown `stream()` and must be expressed through an override sidecar. A `compaction/summary` carrying `llmStreamCall: true` and a complete `rawOutput` replays as one canonical successful stream at that event's position. Scripted strings may embed `{{fromRequest:<regex>}}`; at stream time each placeholder resolves against the live request's string leaves, taking the pattern's last match and its first capture group (or the whole match) in place. A successful `knowledge/document` replays its exact `rawOutput` JSON at the document event position.
 
 The committed-corpus test discovers every versioned `session*.jsonl` under `snapshots/`, `packages/`, and `scripts/snapshots/python-sdk-single-exe/`. Every artifact must restore to the current view through the real catalog. Any refusal fails with the artifact path, so the fixture owner must correct the invalid relationship before replay or comparison.
 
@@ -144,7 +144,7 @@ None; this package neither assembles nor sends a provider request.
 These limits define when replay cannot stand in for a live model. They are current package constraints, not a task backlog.
 
 - **First-call-order script binding assumes sequential delegation** — a cut that runs sibling subagents concurrently would bind live sessions to recorded scripts non-deterministically; a stronger keying is deferred until such a scenario exists.
-- **Only ordinary loop chunks and marked local compaction outputs are derivable** — a pure pre-chunk throw, a cancel/hang, or an unmarked external summarizer call needs the `replay.override.json` sidecar; replacement and patch forms affect only the primary session, and child scripts still derive from their logs.
+- **Only ordinary loop chunks, marked local compaction, and knowledge outputs are derivable** — a pure pre-chunk throw, a cancel/hang, or an unmarked external summarizer call needs the `replay.override.json` sidecar; replacement and patch forms affect only the primary session, and child scripts still derive from their logs.
 
 <a id="dev-note"></a>
 ### Dev Note

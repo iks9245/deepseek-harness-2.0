@@ -484,6 +484,37 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 来源：[`packages/hooks/hook-protocol/src/types.ts:31`](../packages/hooks/hook-protocol/src/types.ts)
 
+### `knowledge/*`
+
+<a id="knowledgedocument--log-only"></a>
+
+#### `knowledge/document` — log-only
+
+```ts persistence-catalog
+/** Validated organized map; original answers remain unchanged. */
+'knowledge/document': { readonly document: KnowledgeDocumentRecord; readonly rawOutput: string }
+```
+
+来源： [`packages/session/session-knowledge/src/types.ts:73`](../packages/session/session-knowledge/src/types.ts)
+
+<a id="knowledgerequest--log-only"></a>
+
+#### `knowledge/request` — log-only
+
+```ts persistence-catalog
+/** Exact auxiliary model input, appended before dispatch and excluded from conversational model history. */
+'knowledge/request': {
+  readonly throughSeq: SessionSeq
+  readonly provider: string
+  readonly model: string
+  readonly system: string
+  readonly messages: Message[]
+  readonly maxTokens: number
+}
+```
+
+来源： [`packages/session/session-knowledge/src/types.ts:64`](../packages/session/session-knowledge/src/types.ts)
+
 ### `llm/*`
 
 <a id="llmretry--log-only"></a>

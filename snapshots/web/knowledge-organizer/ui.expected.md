@@ -1,0 +1,28 @@
+- text: deepseek-v4-flash · Organized from 1 original answers
+- heading "Memory and attention" [level=3]
+- paragraph: Attention supports recall within capacity limits.
+- paragraph: AI-organized content. Quotations are traceable; claims and relationships have not been independently verified.
+- navigation "Organized subjects":
+  - heading "Cognition" [level=4]
+  - button "Claim Attention supports memory":
+    - text: Claim
+    - strong: Attention supports memory
+  - button "Limitation Capacity matters":
+    - text: Limitation
+    - strong: Capacity matters
+- article:
+  - heading "Attention supports memory" [level=4]
+  - paragraph: Attention helps recall.
+  - heading "Original evidence" [level=4]
+  - blockquote:
+    - paragraph: Attention helps memory.
+    - button "View turn 1 source"
+  - heading "Proposed relationships" [level=4]
+  - paragraph:
+    - strong: Attention supports memory
+    - text: → Related →
+    - strong: Capacity matters
+  - paragraph: Both describe conditions for recall.
+  - blockquote:
+    - paragraph: Attention helps memory.
+    - button "View turn 1 source"

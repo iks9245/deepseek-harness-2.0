@@ -15,6 +15,8 @@
   - tab "Map" [selected]
   - tab "Reading"
   - tab "Transcript"
+- button "Organize map with LLM"
+- paragraph: Uses the current model to organize all completed answers; additional model usage applies.
 - heading "Research question" [level=3]
 - paragraph: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop."
 - heading "Latest answer · original excerpts" [level=3]
