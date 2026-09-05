@@ -11,34 +11,56 @@
     - tab "Trajectory"
 - text: Knowledge workspace
 - heading "Knowledge map" [level=2]
-- paragraph: "Use the bash tool to run exactly: printf 'MINIMAL…"
 - tablist "Knowledge view":
   - tab "Map" [selected]
   - tab "Reading"
   - tab "Transcript"
+- heading "Research question" [level=3]
+- paragraph: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop."
+- heading "Latest answer · original excerpts" [level=3]
+- button "MINIMAL_PRESET_REQUEST_OK"
+- paragraph: MINIMAL_PRESET_REQUEST_OK
+- heading "Limitations and unfinished work" [level=3]
 - region "Task status":
   - paragraph:
     - text: Turn 1 · Completed
     - button "View original conversation"
-- 'button "Topic Use the bash tool to run exactly: printf ''MINIMAL…"':
-  - img
-  - text: Topic
-  - strong: "Use the bash tool to run exactly: printf 'MINIMAL…"
-- 'button "Question Use the bash tool to run exactly: printf ''MINIMAL_BASH_CARD_OK\\n''. Then… Use the bash tool to run exactly: printf ''MINIMAL_BASH_CARD_OK\\n''. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop. Completed"':
-  - img
-  - text: Question
-  - strong: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then…"
-  - text: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then reply exactly MINIMAL_PRESET_REQUEST_OK and stop. Completed"
-- button "Answer MINIMAL_PRESET_REQUEST_OK MINIMAL_PRESET_REQUEST_OK":
-  - img
-  - text: Answer
-  - strong: MINIMAL_PRESET_REQUEST_OK
-  - text: MINIMAL_PRESET_REQUEST_OK
-- button "Tool activity bash Completed":
-  - img
-  - text: Tool activity
-  - strong: bash
-  - text: Completed
+- paragraph: Excerpts preserve the source. Claims and references have not been independently verified.
+- heading "Artifacts" [level=3]
+- paragraph: No successful file production is recorded.
+- text: 1 turns · 4 loaded nodes
+- group:
+  - text: Chapters and sources Search chapters and sources
+  - searchbox "Search chapters and sources"
+  - text: Scope
+  - combobox "Scope":
+    - option "All turns" [selected]
+    - option "Turn 1"
+  - status: List shows 4/4 items
+  - navigation "Chapters and sources":
+    - 'button "Topic Use the bash tool to run exactly: printf ''MINIMAL…"'
+    - 'button "Question · Turn 1 Use the bash tool to run exactly: printf ''MINIMAL_BASH_CARD_OK\\n''. Then…"'
+    - button "Answer · Turn 1 MINIMAL_PRESET_REQUEST_OK"
+    - button "Tool activity · Turn 1 bash"
+- region "Conversation knowledge graph":
+  - paragraph: Showing 3/4 nodes
+  - button "Zoom out"
+  - text: 100%
+  - button "Zoom in"
+  - button "Fit width"
+  - button "Focus selection"
+  - button "Show tool activity (1)"
+  - paragraph: Lines show section, reference, or production membership; they do not assert support or refutation.
+  - 'button "Topic Use the bash tool to run exactly: printf ''MINIMAL…"':
+    - text: Topic
+    - strong: "Use the bash tool to run exactly: printf 'MINIMAL…"
+  - 'button "Question · Completed Use the bash tool to run exactly: printf ''MINIMAL_BASH_CARD_OK\\n''. Then…"':
+    - text: Question · Completed
+    - strong: "Use the bash tool to run exactly: printf 'MINIMAL_BASH_CARD_OK\\n'. Then…"
+  - button "Answer MINIMAL_PRESET_REQUEST_OK":
+    - text: Answer
+    - strong: MINIMAL_PRESET_REQUEST_OK
+- button "Knowledge changes and open questions"
 - textbox "Message or run a task... / commands, @ files or sessions"
 - button "Commands":
   - img

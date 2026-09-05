@@ -5,6 +5,7 @@ import { extractMarkdownPlainText } from './plain-text.ts'
 /** One non-overlapping section, addressed by offsets in the original Markdown. */
 export interface MarkdownSection {
   readonly title: string
+  readonly depth: number
   readonly start: number
   readonly bodyStart: number
   readonly end: number
@@ -24,7 +25,7 @@ export function extractMarkdownSections(text: string): readonly MarkdownSection[
     if (start === undefined || bodyStart === undefined) {
       throw new Error('Markdown heading has no source offsets')
     }
-    return [{ title: extractMarkdownPlainText(text.slice(start, bodyStart)), start, bodyStart }]
+    return [{ title: extractMarkdownPlainText(text.slice(start, bodyStart)), depth: node.depth, start, bodyStart }]
   })
   return headings.map((heading, index) => ({ ...heading, end: headings[index + 1]?.start ?? text.length }))
 }

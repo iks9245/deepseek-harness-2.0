@@ -1,229 +1,94 @@
-/** Map-first and reading-mode presentation for a Knowledge Workspace document. */
-
-import { useEffect, useMemo, useRef } from 'react'
-import {
-  IconCheckOutline16, IconChevronDownOutline14, IconChevronRightOutline14,
-  IconChecklistOutline14, IconListPenOutline16, IconSparkle16,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-import type { ChatViewSlotProps } from '../contract/slots.ts'
-import type { KnowledgeCard, KnowledgeCardKind, KnowledgeDocument } from './model.ts'
-import type { ChatSourceTarget } from '../contract/store.ts'
+/** Summary, complete chapter navigation, structural map, and Markdown reading over shared sources. */
+import { useMemo, useState } from 'react'
 import { KnowledgeActions } from './KnowledgeActions.tsx'
 import { KnowledgeStatusSummary } from './ExecutiveSummary.tsx'
+import { KnowledgeReader } from './KnowledgeReader.tsx'
+import { KnowledgeGraph } from './KnowledgeGraph.tsx'
+import { KnowledgeChanges } from './KnowledgeChanges.tsx'
+import type { KnowledgeWorkspaceProps } from './workspace-props.ts'
 import css from './KnowledgeWorkspace.module.css'
 
-interface KnowledgeWorkspaceProps {
-  readonly document: KnowledgeDocument
-  readonly mode: 'map' | 'reading'
-  readonly selectedId: string | null
-  readonly bookmarks: readonly string[]
-  readonly expandedCards: readonly string[]
-  readonly setMode: (mode: 'map' | 'reading') => void
-  readonly openTranscript?: () => void
-  readonly openSource: (source: ChatSourceTarget) => void
-  readonly inspectTool: (card: KnowledgeCard) => void
-  readonly openFile: (path: string) => void
-  readonly select: (id: string) => void
-  readonly toggleBookmark: (id: string) => void
-  readonly toggleCard: (id: string) => void
-  readonly t: ChatViewSlotProps['t']
-}
-
-const KIND_ICON = {
-  topic: IconSparkle16,
-  question: IconListPenOutline16,
-  answer: IconCheckOutline16,
-  section: IconListPenOutline16,
-  tool: IconChecklistOutline14,
-  reference: IconListPenOutline16,
-  artifact: IconListPenOutline16,
-} satisfies Record<KnowledgeCardKind, typeof IconSparkle16>
-
-function cardTitle(card: KnowledgeCard, t: ChatViewSlotProps['t']): string {
-  return card.title || t(`knowledge.kind.${card.kind}`)
-}
-
-function cardPosition(card: KnowledgeCard, index: number): { left: string; top: string } {
-  if (card.kind === 'topic') return { left: '46%', top: '48%' }
-  const lane = Math.max(0, index - 1) % 6
-  const row = Math.floor(index / 6)
-  const positions = [
-    [20, 18], [72, 18], [16, 52], [76, 52], [28, 80], [64, 80],
-  ] as const
-  const [left, top] = positions[lane] ?? positions[0]
-  const drift = Math.min(8, row * 3)
-  return {
-    left: `${String(Math.min(78, left + drift))}%`,
-    top: `${String(Math.min(82, top + drift))}%`,
-  }
-}
-
-function MapNode({ card, index, selected, bookmarked, onSelect, t }: {
-  card: KnowledgeCard
-  index: number
-  selected: boolean
-  bookmarked: boolean
-  onSelect: () => void
-  t: ChatViewSlotProps['t']
-}) {
-  const Icon = KIND_ICON[card.kind]
-  return (
-    <button
-      type="button"
-      className={[css.mapNode, css[`kind_${card.kind}`], selected ? css.selected : ''].join(' ')}
-      style={cardPosition(card, index)}
-      onClick={onSelect}
-      aria-current={selected || undefined}
-    >
-      <span className={css.nodeMeta}><Icon size={14} />{t(`knowledge.kind.${card.kind}`)}</span>
-      <strong>{cardTitle(card, t)}</strong>
-      <span>{card.summary}</span>
-      {card.status !== undefined && <span>{t(`knowledge.status.${card.status}`)}</span>}
-      {bookmarked && <span className={css.bookmarkMark}>{t('knowledge.bookmarked')}</span>}
-    </button>
-  )
-}
-
-function Graph({ document, selectedId, bookmarks, select, t }: Pick<KnowledgeWorkspaceProps,
-  'document' | 'selectedId' | 'bookmarks' | 'select' | 't'>) {
-  const visible = useMemo(() => {
-    const topic = document.cards.find(card => card.kind === 'topic')
-    const references = document.cards.filter(card => card.kind === 'reference').slice(0, 1)
-    const surrounding = [
-      ...document.cards.filter(card => card.kind === 'question').slice(-2),
-      ...document.cards.filter(card => card.kind === 'answer').slice(-2),
-      ...document.cards.filter(card => card.kind === 'artifact').slice(-1),
-      ...document.cards.filter(card => card.kind === 'tool').slice(-1),
-      ...references,
-    ]
-    return topic === undefined ? surrounding : [topic, ...surrounding]
-  }, [document.cards])
-  const visiblePositions = new Map(visible.map((card, index) => [card.id, cardPosition(card, index)]))
-  const visibleEdges = document.edges.flatMap((edge) => {
-    const from = visiblePositions.get(edge.from)
-    const to = visiblePositions.get(edge.to)
-    return from === undefined || to === undefined ? [] : [{ edge, from, to }]
-  })
-  return (
-    <div className={css.graph} aria-label={t('knowledge.map.label')}>
-      <div className={css.grid} aria-hidden />
-      <svg className={css.edges} viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden>
-        {visibleEdges.map(({ edge, from, to }) => {
-          return (
-            <line
-              key={`${edge.from}:${edge.to}`}
-              x1={parseFloat(from.left) * 10 + 70}
-              y1={parseFloat(from.top) * 7 + 35}
-              x2={parseFloat(to.left) * 10 + 70}
-              y2={parseFloat(to.top) * 7 + 35}
-            />
-          )
-        })}
-      </svg>
-      {visible.map((card, index) => (
-        <MapNode
-          key={card.id}
-          card={card}
-          index={index}
-          selected={card.id === selectedId}
-          bookmarked={bookmarks.includes(card.id)}
-          onSelect={() => { select(card.id) }}
-          t={t}
-        />
-      ))}
-      {visible.length === 1 && <div className={css.emptyMap}>{t('knowledge.map.empty')}</div>}
-    </div>
-  )
-}
-
-function ReadingCards(
-  { document, selectedId, bookmarks, expandedCards, select, toggleBookmark, toggleCard, openSource, inspectTool, openFile, t }:
-  Omit<KnowledgeWorkspaceProps, 'mode' | 'setMode'>,
-) {
-  const focusedCard = useRef<HTMLElement>(null)
-  useEffect(() => {
-    const card = focusedCard.current
-    const scroll = card?.closest('[data-conversation-scroll]') ?? card?.parentElement
-    if (card !== null && scroll instanceof HTMLElement) {
-      const scrollTop = scroll.getBoundingClientRect().top
-      const toolbarBottom = card.closest('section')?.querySelector('header')?.getBoundingClientRect().bottom ?? scrollTop
-      scroll.scrollTop += card.getBoundingClientRect().top - Math.max(scrollTop, toolbarBottom)
-    }
-  }, [selectedId, expandedCards])
-  const total = Math.max(1, document.cards.length)
-  const selectedIndex = document.cards.findIndex(card => card.id === selectedId)
-  const current = selectedIndex < 0 ? 1 : selectedIndex + 1
-  return (
-    <div className={css.reading}>
-      <div className={css.readingIntro}>
-        <span>{t('knowledge.reading.progress', { current, total })}</span>
-        <div className={css.progress}><span style={{ width: `${String(Math.min(100, current / total * 100))}%` }} /></div>
-      </div>
-      {document.cards.map((card) => {
-        const expanded = expandedCards.includes(card.id)
-        const bookmarked = bookmarks.includes(card.id)
-        const Icon = KIND_ICON[card.kind]
-        return (
-          <article
-            key={card.id} ref={card.id === selectedId ? focusedCard : undefined}
-            data-knowledge-card={card.id} aria-current={card.id === selectedId || undefined}
-            className={[css.knowledgeCard, card.id === selectedId ? css.cardSelected : ''].join(' ')}
-          >
-            <button type="button" className={css.cardHeader} aria-expanded={expanded} onClick={() => { select(card.id); toggleCard(card.id) }}>
-              <span className={css.cardKind}><Icon size={14} />{t(`knowledge.kind.${card.kind}`)}</span>
-              <strong>{cardTitle(card, t)}</strong>
-              {expanded ? <IconChevronDownOutline14 /> : <IconChevronRightOutline14 />}
-            </button>
-            <p>{card.summary}</p>
-            {card.status !== undefined && <p>{t(`knowledge.status.${card.status}`)}</p>}
-            {expanded && card.details !== '' && <div className={css.cardDetails}>{card.details}</div>}
-            <KnowledgeActions card={card} openSource={openSource} inspectTool={inspectTool} openFile={openFile} t={t} />
-            <div className={css.cardActions}>
-              <button type="button" onClick={() => { toggleBookmark(card.id) }} aria-pressed={bookmarked}>
-                {bookmarked ? t('knowledge.bookmarked') : t('knowledge.bookmark')}
-              </button>
-              {card.turn !== undefined && <span>{t('knowledge.turn', { turn: card.turn })}</span>}
-            </div>
-          </article>
-        )
-      })}
-    </div>
-  )
-}
-
 /**
- * Render the selected Knowledge Workspace surface.
- * @param props - Document, browser-local reading state, and locale actions.
- * @returns the map-first workspace with a functional reading-mode switch.
+ * Present a research overview before the map and keep every loaded card reachable in a searchable list.
+ * @param props - Reconstructed source document, local reading preferences, and existing conversation actions.
+ * @returns equivalent map/list/reader paths with explicit history and comparison coverage.
  */
 export function KnowledgeWorkspace(props: KnowledgeWorkspaceProps) {
-  const { document, mode, setMode, openTranscript, t } = props
+  const { document, mode, setMode, openTranscript, readCard, t } = props
+  const [query, setQuery] = useState('')
+  const [turn, setTurn] = useState<number | null>(null)
+  const latest = document.turns.at(-1)
+  const question = document.cards.find(card => card.kind === 'question' && card.turn === latest?.turn)
+  const excerpts = document.excerpts.filter(card => card.turn === latest?.turn)
+  const chapters = excerpts.filter(card => (card.depth ?? 2) > 1)
+  const lead = (chapters.length > 0 ? chapters : excerpts).slice(0, 2)
+  const artifacts = document.cards.filter(card => card.kind === 'artifact')
+  const scoped = useMemo(() => ({ ...document, cards: document.cards.filter(card => turn === null || card.turn === turn || card.kind === 'topic') }), [document, turn])
+  const found = scoped.cards.filter(card => `${card.title}\n${card.summary}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()))
   return (
     <section className={css.root}>
       <header className={css.toolbar}>
-        <div>
-          <span className={css.eyebrow}>{t('knowledge.eyebrow')}</span>
-          <h2>{t('knowledge.title')}</h2>
-          {document.title !== '' && <p>{document.title}</p>}
-        </div>
+        <div><span className={css.eyebrow}>{t('knowledge.eyebrow')}</span><h2>{t(mode === 'reading' ? 'knowledge.mode.reading' : 'knowledge.title')}</h2></div>
         <div className={css.modeSwitch} role="tablist" aria-label={t('knowledge.mode.label')}>
-          <button type="button" role="tab" aria-selected={mode === 'map'} onClick={() => { setMode('map') }}>
-            {t('knowledge.mode.map')}
-          </button>
-          <button type="button" role="tab" aria-selected={mode === 'reading'} onClick={() => { setMode('reading') }}>
-            {t('knowledge.mode.reading')}
-          </button>
-          {openTranscript !== undefined && (
-            <button type="button" role="tab" aria-selected={false} onClick={openTranscript}>
-              {t('knowledge.mode.transcript')}
-            </button>
-          )}
+          <button type="button" role="tab" aria-selected={mode === 'map'} onClick={() => { setMode('map') }}>{t('knowledge.mode.map')}</button>
+          <button type="button" role="tab" aria-selected={mode === 'reading'} onClick={() => { setMode('reading') }}>{t('knowledge.mode.reading')}</button>
+          {openTranscript !== undefined && <button type="button" role="tab" aria-selected={false} onClick={openTranscript}>{t('knowledge.mode.transcript')}</button>}
         </div>
       </header>
-      <KnowledgeStatusSummary document={document} openSource={props.openSource} t={t} />
-      {mode === 'map'
-        ? <Graph {...props} />
-        : <ReadingCards {...props} />}
+      {mode === 'map' && <div className={css.overview}>
+        <section className={css.researchQuestion}>
+          <h3>{t('knowledge.overview.question')}</h3>
+          <p>{question?.details || document.title}</p>
+        </section>
+        <div className={css.overviewGrid}>
+          <section>
+            <h3>{t('knowledge.overview.answer')}</h3>
+            {lead.length === 0 ? <p>{t('knowledge.summary.empty')}</p> : lead.map(card => <div className={css.excerpt} key={card.id}>
+              <button type="button" onClick={() => { readCard(card.id) }}>{card.title}</button><p>{card.summary}</p>
+            </div>)}
+            {excerpts.length > lead.length && <p className={css.hint}>{t('knowledge.overview.more', { count: excerpts.length - lead.length })}</p>}
+          </section>
+          <section>
+            <h3>{t('knowledge.overview.limits')}</h3>
+            <KnowledgeStatusSummary document={document} openSource={props.openSource} t={t} />
+            <p className={css.hint}>{t('knowledge.overview.unverified')}</p>
+            <h3>{t('knowledge.kind.artifact')}</h3>
+            {artifacts.length === 0 ? <p className={css.hint}>{t('knowledge.overview.noArtifacts')}</p> : <details>
+              <summary>{t('knowledge.overview.artifacts', { count: artifacts.length })}</summary>
+              {artifacts.map(card => <div key={card.id}>
+                <strong>{card.title}</strong>
+                <KnowledgeActions card={card} openSource={props.openSource} inspectTool={props.inspectTool}
+                  openFile={props.openFile} t={t} />
+              </div>)}
+            </details>}
+          </section>
+        </div>
+      </div>}
+      <div className={css.coverage}>
+        <span>{t('knowledge.coverage.count', { turns: document.turns.length, cards: document.cards.length })}</span>
+        {document.incomplete && <><span>{t('knowledge.coverage.partial')}</span><button type="button" disabled={props.loadingHistory} onClick={props.loadHistory}>{t(props.loadingHistory ? 'loading' : 'knowledge.coverage.load')}</button></>}
+      </div>
+      <div className={css.workbench}>
+        <details className={css.navigator} open>
+          <summary>{t('knowledge.navigator.title')}</summary>
+          <label>{t('knowledge.navigator.search')}<input type="search" value={query} onChange={(event) => { setQuery(event.target.value) }} /></label>
+          <label>{t('knowledge.navigator.scope')}<select aria-label={t('knowledge.navigator.scope')} value={turn ?? ''} onChange={(event) => { setTurn(event.target.value === '' ? null : Number(event.target.value)) }}>
+            <option value="">{t('knowledge.navigator.all')}</option>
+            {document.turns.map(item => <option key={item.turn} value={item.turn}>{t('knowledge.turn', { turn: item.turn })}</option>)}
+          </select></label>
+          <p role="status">{t('knowledge.navigator.count', { shown: found.length, total: scoped.cards.length })}</p>
+          <nav aria-label={t('knowledge.navigator.title')} className={css.navigatorList}>
+            {found.map(card => <button type="button" key={card.id} aria-current={props.selectedId === card.id || undefined}
+              data-knowledge-list={card.id} data-depth={card.depth ?? 0} onClick={() => { readCard(card.id) }}>
+              <span>{t(`knowledge.kind.${card.kind}`)}{card.turn !== undefined && ` · ${t('knowledge.turn', { turn: card.turn })}`}</span>
+              {card.title || t(`knowledge.kind.${card.kind}`)}
+            </button>)}
+            {found.length === 0 && <p>{t('knowledge.navigator.empty')}</p>}
+          </nav>
+        </details>
+        {mode === 'map' ? <KnowledgeGraph document={scoped} selectedId={props.selectedId} readCard={readCard} t={t} /> : <KnowledgeReader {...props} />}
+      </div>
+      <KnowledgeChanges {...props} />
     </section>
   )
 }

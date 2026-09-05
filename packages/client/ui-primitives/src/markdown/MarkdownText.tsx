@@ -30,10 +30,18 @@ function renderSettled(
   text: string,
   labels: MarkdownLabels,
   fileMentions: MarkdownFileMentions | undefined,
+  referenceText: string | undefined,
 ): ReactNode[] {
-  const root = parseGfmWithMath(text)
+  const root = parseGfmWithMath(referenceText ?? text)
+  const start = referenceText === undefined ? 0 : referenceText.indexOf(text)
+  if (start < 0) throw new Error('Markdown excerpt is absent from its reference document')
   const targets = createReferenceTargets()
   collectReferenceTargets(root.children, targets)
+  const selected = referenceText === undefined ? root.children : root.children.filter((node) => {
+    /* v8 ignore next -- the grammar stamps every top-level node. */
+    const offset = node.position?.start.offset ?? -1
+    return offset >= start && offset < start + text.length
+  })
   const context: MarkdownRenderContext = {
     streaming: false,
     labels,
@@ -43,7 +51,7 @@ function renderSettled(
     footnoteCounts: new Map(),
   }
   const blocks = wrapBlockChildren(
-    renderBlocks(root.children.map((node, index) => ({
+    renderBlocks(selected.map((node, index) => ({
       node,
       /* v8 ignore next -- parseFull uses parseGfm, which stamps every top-level node. */
       key: node.position?.start.offset ?? -(index + 1),
@@ -153,14 +161,18 @@ class StreamingRenderer {
  * links inline-code tokens its resolver recognizes as real files; this is
  * the single streaming gate — it applies to settled renders only, because a
  * streaming message's vocabulary is not final and frozen cached elements
- * must not bake in handlers that could go stale.
+ * must not bake in handlers that could go stale. `referenceText` supplies
+ * the original document for a settled excerpt composed of complete top-level
+ * Markdown blocks; it must contain `text` verbatim. References and footnotes
+ * resolve against that document without displaying its other blocks.
  * @returns A GFM document with TeX math rendered through KaTeX; raw HTML,
  * relative links, and unsafe protocols are disabled, while absolute HTTP(S)
  * images render directly.
  */
-export const MarkdownText = memo(function MarkdownText({ text, streaming = false, labels, fileMentions }: {
+export const MarkdownText = memo(function MarkdownText({ text, streaming = false, labels, fileMentions, referenceText }: {
   text: string
   streaming?: boolean
+  referenceText?: string | undefined
   labels: MarkdownLabels
   fileMentions?: MarkdownFileMentions | undefined
 }) {
@@ -169,13 +181,13 @@ export const MarkdownText = memo(function MarkdownText({ text, streaming = false
   const children = useMemo(() => {
     if (!streaming) {
       streamRef.current = null
-      return renderSettled(text, labels, fileMentions)
+      return renderSettled(text, labels, fileMentions, referenceText)
     }
     if (streamRef.current === null || streamLabelsRef.current !== labels) {
       streamRef.current = new StreamingRenderer(labels)
       streamLabelsRef.current = labels
     }
     return streamRef.current.render(text)
-  }, [text, streaming, labels, fileMentions])
+  }, [text, streaming, labels, fileMentions, referenceText])
   return <div className={css.markdown}>{children}</div>
 })

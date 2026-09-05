@@ -27,9 +27,17 @@ export interface TurnProcessViewEntry {
   readonly answerStep: number
 }
 
+/** Reader offset within one source card, local to the current browser. */
+export interface KnowledgeReadingPosition {
+  readonly cardId: string
+  readonly scrollTop: number
+}
+
 /** Per-Session state shared only by the Chat view and details surface. */
 export interface ChatStoreState {
   selection: SelectionTarget | null
+  /** Absent until the reader first saves an offset. */
+  knowledgeReadingPosition?: KnowledgeReadingPosition
   turnProcesses: TurnProcessViewEntry[]
   /** Primary Knowledge Workspace surface for this Session. */
   knowledgeMode: 'auto' | 'map' | 'reading' | 'transcript'

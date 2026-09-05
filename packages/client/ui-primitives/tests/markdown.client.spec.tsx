@@ -8,6 +8,26 @@ import { mathCompatibility } from '../src/markdown/mathCompatibility.ts'
 afterEach(cleanup)
 
 describe('MarkdownText', () => {
+  it('renders only an excerpt while resolving links and footnotes elsewhere in its source', () => {
+    const text = '## Evidence\n\n[Source][ref] supports this point[^note].'
+    const referenceText = `# Omitted\n\nOther content.\n\n${text}\n\n## Appendix\n\n[ref]: https://example.test/source\n\n[^note]: Original note.`
+    const { container } = render(<MarkdownText text={text} referenceText={referenceText} />)
+    expect(screen.getByRole('link', { name: 'Source' }).getAttribute('href')).toBe('https://example.test/source')
+    expect(container.querySelector('.footnotes')?.textContent).toContain('Original note.')
+    expect(screen.queryByRole('heading', { name: 'Omitted' })).toBeNull()
+    expect(screen.queryByRole('heading', { name: 'Appendix' })).toBeNull()
+    expect(screen.queryByText('Other content.')).toBeNull()
+  })
+
+  it('keeps an unclosed source fence literal and rejects excerpts absent from the source', () => {
+    const text = '## Code\n\n```\n[ref]: remains code'
+    const { container } = render(<MarkdownText text={text} referenceText={`[ref]: https://example.test\n\n${text}`} />)
+    expect(container.querySelector('pre code')?.textContent).toContain('[ref]: remains code')
+    expect(container.querySelector('pre code')?.textContent).not.toContain('https://example.test')
+    expect(() => render(<MarkdownText text="Missing excerpt" referenceText="Original document" />))
+      .toThrow('Markdown excerpt is absent from its reference document')
+  })
+
   it('renders CommonMark and GFM elements as semantic DOM', () => {
     const markdown = [
       '# Heading',
